@@ -10,7 +10,10 @@ public class ChessBoard {
 
     final private ChessPiece[][] board = new ChessPiece[8][8];
     public ChessBoard() {
-        
+    }
+
+    private static boolean CheckinBounds(int row, int col) {
+        return row >= 1 && row <= 8 && col >= 1 && col <= 8;
     }
 
     /**
@@ -20,7 +23,12 @@ public class ChessBoard {
      * @param piece    the piece to add
      */
     public void addPiece(ChessPosition position, ChessPiece piece) {
-        board[position.getRow() - 1][position.getColumn() - 1] = piece;
+        final int r = position.getRow();
+        final int c = position.getColumn();
+        if (!CheckinBounds(r,c)) {
+            throw new IllegalArgumentException("Out of bounds: row=" + r + "col=" + c);
+        }
+        board[r- 1][c - 1] = piece;
     }
 
     /**
@@ -31,7 +39,12 @@ public class ChessBoard {
      * position
      */
     public ChessPiece getPiece(ChessPosition position) {
-        return board[position.getRow() - 1][position.getColumn() - 1];
+        final int r = position.getRow();
+        final int c = position.getColumn();
+        if (!CheckinBounds(r, c)) {
+            throw new IndexOutOfBoundsException("Piece out of bounds at (" + r + ", " + c + ")");
+        }
+        return board[r- 1][c - 1];
     }
 
     /**
@@ -39,6 +52,33 @@ public class ChessBoard {
      * (How the game of chess normally starts)
      */
     public void resetBoard() {
-        throw new RuntimeException("Not implemented");
+        for (int r = 1; r <= 8; r++) {
+            for (int c = 1; c <= 8; c++) {
+                addPiece(new ChessPosition(r, c), null);
+            }
+        }
+
+        final ChessPiece.PieceType[] BackRow = {
+                ChessPiece.PieceType.ROOK,
+                ChessPiece.PieceType.KNIGHT,
+                ChessPiece.PieceType.BISHOP,
+                ChessPiece.PieceType.QUEEN,
+                ChessPiece.PieceType.KING,
+                ChessPiece.PieceType.BISHOP,
+                ChessPiece.PieceType.KNIGHT,
+                ChessPiece.PieceType.ROOK
+        };
+
+        // add white pieces
+        for (int c = 1; c <= 8; c++){
+            addPiece(new ChessPosition(1, c), new ChessPiece(ChessGame.TeamColor.WHITE, BackRow[c-1]));
+            addPiece(new ChessPosition(2, c), new ChessPiece(ChessGame.TeamColor.WHITE, ChessPiece.PieceType.PAWN));
+        }
+
+        // add black pieces
+        for (int c = 1; c <= 8; c++) {
+            addPiece(new ChessPosition(8, c), new ChessPiece(ChessGame.TeamColor.BLACK, BackRow[c-1]));
+            addPiece(new ChessPosition(7, c), new ChessPiece(ChessGame.TeamColor.BLACK, ChessPiece.PieceType.PAWN));
+        }
     }
 }

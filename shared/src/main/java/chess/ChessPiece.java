@@ -55,8 +55,27 @@ public class ChessPiece {
      */
     public Collection<ChessMove> pieceMoves(ChessBoard board, ChessPosition myPosition) {
         var moves = new HashSet<ChessMove>();
+
+        switch (this.type) {
+            case ROOK:
+                break;
+            case KNIGHT:
+                break;
+            case BISHOP:
+                break;
+            case QUEEN:
+                break;
+            case KING:
+                break;
+            case PAWN:
+
+                break;
+        }
+
         return moves;
     }
+
+
 
     @Override
     public boolean equals(Object o) {
