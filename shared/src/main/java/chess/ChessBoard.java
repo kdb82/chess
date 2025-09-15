@@ -12,9 +12,14 @@ public class ChessBoard {
     public ChessBoard() {
     }
 
-    private static boolean CheckinBounds(int row, int col) {
-        return row >= 1 && row <= 8 && col >= 1 && col <= 8;
+    public static boolean inBounds(int row, int col) {
+        boolean success = (row >= 1 && row <= 8) && (col >= 1 && col <= 8);
+        if (!success) {
+            System.out.print("tried to get piece out of bounds");
+        }
+        return success;
     }
+
 
     /**
      * Adds a chess piece to the chessboard
@@ -25,7 +30,7 @@ public class ChessBoard {
     public void addPiece(ChessPosition position, ChessPiece piece) {
         final int r = position.getRow();
         final int c = position.getColumn();
-        if (!CheckinBounds(r,c)) {
+        if (!inBounds(r,c)) {
             throw new IllegalArgumentException("Out of bounds: row=" + r + "col=" + c);
         }
         board[r- 1][c - 1] = piece;
@@ -41,7 +46,7 @@ public class ChessBoard {
     public ChessPiece getPiece(ChessPosition position) {
         final int r = position.getRow();
         final int c = position.getColumn();
-        if (!CheckinBounds(r, c)) {
+        if (!inBounds(r, c)) {
             throw new IndexOutOfBoundsException("Piece out of bounds at (" + r + ", " + c + ")");
         }
         return board[r- 1][c - 1];

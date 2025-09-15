@@ -15,6 +15,11 @@ public class ChessPiece {
     private final ChessGame.TeamColor pieceColor;
     private final PieceType type;
 
+    //helper to make new chess position objects
+    private ChessPosition cpos(int row, int col) {
+        return new ChessPosition(row, col);
+    }
+
     public ChessPiece(ChessGame.TeamColor pieceColor, ChessPiece.PieceType type) {
         this.pieceColor = pieceColor;
         this.type = type;
@@ -46,6 +51,18 @@ public class ChessPiece {
         return type;
     }
 
+    private void addPawnMove(HashSet<ChessMove> moves, ChessPosition start, int endrow, int endcol, boolean promote) {
+        ChessPosition end = new ChessPosition(endrow, endcol);
+        if (!promote) {
+            moves.add(new ChessMove(start, end, null));
+        } else {
+            moves.add(new ChessMove(start, end, PieceType.QUEEN));
+            moves.add(new ChessMove(start, end, PieceType.ROOK));
+            moves.add(new ChessMove(start, end, PieceType.BISHOP));
+            moves.add(new ChessMove(start, end, PieceType.KNIGHT));
+        }
+    }
+
     /**
      * Calculates all the positions a chess piece can move to
      * Does not take into account moves that are illegal due to leaving the king in
@@ -68,10 +85,30 @@ public class ChessPiece {
             case KING:
                 break;
             case PAWN:
+                final int row = myPosition.getRow();
+                final int col = myPosition.getColumn();
+                final boolean white = (this.pieceColor == ChessGame.TeamColor.WHITE);
+                final int direction = white ? +1 : -1;
+                final int start_row = white ? 2 : 7;
+                final int promo_row = white ? 8 : 1;
 
-                break;
+                int row_move = row + direction;
+
+                // single forward: check if in bounds and endposition is empty
+                if(ChessBoard.inBounds(row_move, col) && board.getPiece(cpos(row_move, col)) == null) {
+                    boolean promote = (row_move == promo_row);
+                    addPawnMove(moves, myPosition, row_move, col, promote);
+
+                    //check if on starting row,
+                    if (row == start_row) {
+                        int row_move2 = row + 2 * direction;
+                        if (ChessBoard.inBounds(row_move2, col) && board.getPiece(cpos(row_move2, col)) == null && board.getPiece(cpos(row_move,col)) == null) {
+                            addPawnMove(moves, myPosition, row_move2, col, false);
+                        }
+                    }
+                }
+            break;
         }
-
         return moves;
     }
 
