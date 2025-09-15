@@ -63,6 +63,29 @@ public class ChessPiece {
         }
     }
 
+    private static final int[][] ROOK_DIRS   = {{+1,0},{-1,0},{0,+1},{0,-1}};
+    private static final int[][] BISHOP_DIRS = {{+1,+1},{+1,-1},{-1,+1},{-1,-1}};
+    private static final int[][] QUEEN_DIRS  = {
+            {+1,0},{-1,0},{0,+1},{0,-1},
+            {+1,+1},{+1,-1},{-1,+1},{-1,-1}
+    };
+
+    private void sliderPieceAdd(HashSet<ChessMove> moves, ChessBoard board, ChessPosition start, int row_move, int col_mov) {
+        int current_row = start.getRow();
+        int current_col = start.getColumn();
+
+        if (!ChessBoard.inBounds(current_row,current_col)) return;
+        ChessPiece target = board.getPiece(cpos(current_row, current_col));
+
+        if (target == null) {
+            moves.add(new ChessMove(start, cpos(current_row, current_col), null));
+            int next_row = current_row + row_move;
+            int next_col = current_col + col_mov;
+            sliderPieceAdd(moves, board, start, next_row, next_col);
+        }
+
+    }
+
     /**
      * Calculates all the positions a chess piece can move to
      * Does not take into account moves that are illegal due to leaving the king in
@@ -75,6 +98,7 @@ public class ChessPiece {
 
         switch (this.type) {
             case ROOK:
+
                 break;
             case KNIGHT:
                 break;
@@ -102,9 +126,21 @@ public class ChessPiece {
                     //check if on starting row,
                     if (row == start_row) {
                         int row_move2 = row + 2 * direction;
-                        if (ChessBoard.inBounds(row_move2, col) && board.getPiece(cpos(row_move2, col)) == null && board.getPiece(cpos(row_move,col)) == null) {
+                        if (ChessBoard.inBounds(row_move2, col) && board.getPiece(cpos(row_move2, col)) == null) {
                             addPawnMove(moves, myPosition, row_move2, col, false);
                         }
+                    }
+
+
+                }
+                for (int directional_move : new int[]{-1, +1}) {
+                    final int col_move = col + directional_move;
+                    if(!ChessBoard.inBounds(row_move, col_move)) {continue;}
+
+                    ChessPiece target_square = board.getPiece(cpos(row_move,col_move));
+                    if (target_square != null && target_square.getTeamColor() != this.pieceColor) {
+                        final boolean promote = (row_move == promo_row);
+                        addPawnMove(moves, myPosition, row_move, col_move, promote);
                     }
                 }
             break;
