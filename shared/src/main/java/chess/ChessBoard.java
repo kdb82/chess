@@ -14,9 +14,9 @@ public class ChessBoard {
 
     public static boolean inBounds(int row, int col) {
         boolean success = (row >= 1 && row <= 8) && (col >= 1 && col <= 8);
-        if (!success) {
-            System.out.print("tried to get piece out of bounds");
-        }
+//        if (!success) {
+//            System.out.print("tried to get piece out of bounds");
+//        }
         return success;
     }
 

@@ -63,27 +63,23 @@ public class ChessPiece {
         }
     }
 
-    private static final int[][] ROOK_DIRS   = {{+1,0},{-1,0},{0,+1},{0,-1}};
-    private static final int[][] BISHOP_DIRS = {{+1,+1},{+1,-1},{-1,+1},{-1,-1}};
-    private static final int[][] QUEEN_DIRS  = {
-            {+1,0},{-1,0},{0,+1},{0,-1},
-            {+1,+1},{+1,-1},{-1,+1},{-1,-1}
-    };
 
-    private void sliderPieceAdd(HashSet<ChessMove> moves, ChessBoard board, ChessPosition start, int row_move, int col_mov) {
-        int current_row = start.getRow();
-        int current_col = start.getColumn();
+    private void sliderPieceAdd(HashSet<ChessMove> moves, ChessBoard board, ChessPosition start, int row, int col, int row_move, int col_mov) {
 
-        if (!ChessBoard.inBounds(current_row,current_col)) return;
-        ChessPiece target = board.getPiece(cpos(current_row, current_col));
+        if (!ChessBoard.inBounds(row, col)) return;
+        ChessPiece target = board.getPiece(cpos(row, col));
 
         if (target == null) {
-            moves.add(new ChessMove(start, cpos(current_row, current_col), null));
-            int next_row = current_row + row_move;
-            int next_col = current_col + col_mov;
-            sliderPieceAdd(moves, board, start, next_row, next_col);
+            moves.add(new ChessMove(start, cpos(row, col), null));
+            row = row + row_move;
+            col = col + col_mov;
+            sliderPieceAdd(moves, board, start, row, col, row_move, col_mov);
+            return;
         }
 
+        if(target.getTeamColor() != this.pieceColor) {
+            moves.add(new ChessMove(start, cpos(row, col), null));
+        }
     }
 
     /**
@@ -98,13 +94,27 @@ public class ChessPiece {
 
         switch (this.type) {
             case ROOK:
-
+                final int[][] ROOK_DIRS   = {{+1,0},{-1,0},{0,+1},{0,-1}};
+                for(int[] directions : ROOK_DIRS) {
+                    sliderPieceAdd(moves, board, myPosition, myPosition.getRow() + directions[0], myPosition.getColumn() + directions[1], directions[0], directions[1]);
+                }
                 break;
             case KNIGHT:
                 break;
             case BISHOP:
+                final int[][] BISHOP_DIRS = {{+1,+1},{+1,-1},{-1,+1},{-1,-1}};
+                for(int[] directions : BISHOP_DIRS) {
+                    sliderPieceAdd(moves, board, myPosition, myPosition.getRow() + directions[0], myPosition.getColumn() + directions[1], directions[0], directions[1]);
+                }
                 break;
             case QUEEN:
+                final int[][] QUEEN_DIRS  = {
+                        {+1,0},{-1,0},{0,+1},{0,-1},
+                        {+1,+1},{+1,-1},{-1,+1},{-1,-1}
+                };
+                for(int[] directions : QUEEN_DIRS) {
+                    sliderPieceAdd(moves, board, myPosition, myPosition.getRow() + directions[0], myPosition.getColumn() + directions[1], directions[0], directions[1]);
+                }
                 break;
             case KING:
                 break;
