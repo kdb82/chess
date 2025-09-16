@@ -92,6 +92,9 @@ public class ChessPiece {
     public Collection<ChessMove> pieceMoves(ChessBoard board, ChessPosition myPosition) {
         var moves = new HashSet<ChessMove>();
 
+        final int row = myPosition.getRow();
+        final int col = myPosition.getColumn();
+
         switch (this.type) {
             case ROOK:
                 final int[][] ROOK_DIRS   = {{+1,0},{-1,0},{0,+1},{0,-1}};
@@ -100,6 +103,18 @@ public class ChessPiece {
                 }
                 break;
             case KNIGHT:
+                final int[][] KNIGHT_DIRS = {{+1,+2}, {+1, -2}, {-1, +2}, {-1, -2}, {+2, +1}, {+2, -1}, {-2, +1}, {-2, -1}};
+                for (int[] movement : KNIGHT_DIRS) {
+                    int target_row = row+movement[0];
+                    int target_col = col+movement[1];
+
+                    if (!ChessBoard.inBounds(target_row,target_col)) continue;
+
+                    ChessPiece target = board.getPiece(cpos(target_row, target_col));
+                    if (target == null || target.getTeamColor() != this.pieceColor) {
+                        moves.add(new ChessMove(myPosition, cpos(target_row, target_col), null));
+                    }
+                }
                 break;
             case BISHOP:
                 final int[][] BISHOP_DIRS = {{+1,+1},{+1,-1},{-1,+1},{-1,-1}};
@@ -117,10 +132,22 @@ public class ChessPiece {
                 }
                 break;
             case KING:
+                final int[][] KING_DIRS  = {
+                        {+1,0},{-1,0},{0,+1},{0,-1},
+                        {+1,+1},{+1,-1},{-1,+1},{-1,-1}
+                };
+                for (int[] movement : KING_DIRS) {
+                    int target_row = row + movement[0];
+                    int target_col = col + movement[1];
+                    if (!ChessBoard.inBounds(target_row, target_col)) continue;
+
+                    ChessPiece target = board.getPiece(cpos(target_row, target_col));
+                    if (target == null || target.getTeamColor() != this.pieceColor) {
+                        moves.add(new ChessMove(myPosition, cpos(target_row, target_col), null));
+                    }
+                }
                 break;
             case PAWN:
-                final int row = myPosition.getRow();
-                final int col = myPosition.getColumn();
                 final boolean white = (this.pieceColor == ChessGame.TeamColor.WHITE);
                 final int direction = white ? +1 : -1;
                 final int start_row = white ? 2 : 7;
