@@ -51,7 +51,7 @@ public class ChessPiece {
         return type;
     }
 
-    private void addPawnMove(HashSet<ChessMove> moves, ChessPosition start, int endrow, int endcol, boolean promote) {
+    private void addPawnMoveHelper(HashSet<ChessMove> moves, ChessPosition start, int endrow, int endcol, boolean promote) {
         ChessPosition end = new ChessPosition(endrow, endcol);
         if (!promote) {
             moves.add(new ChessMove(start, end, null));
@@ -64,7 +64,7 @@ public class ChessPiece {
     }
 
 
-    private void sliderPieceAdd(HashSet<ChessMove> moves, ChessBoard board, ChessPosition start, int row, int col, int row_move, int col_mov) {
+    private void recursiveMoveHelper(HashSet<ChessMove> moves, ChessBoard board, ChessPosition start, int row, int col, int row_move, int col_mov) {
 
         if (!ChessBoard.inBounds(row, col)) return;
         ChessPiece target = board.getPiece(cpos(row, col));
@@ -73,12 +73,26 @@ public class ChessPiece {
             moves.add(new ChessMove(start, cpos(row, col), null));
             row = row + row_move;
             col = col + col_mov;
-            sliderPieceAdd(moves, board, start, row, col, row_move, col_mov);
+            recursiveMoveHelper(moves, board, start, row, col, row_move, col_mov);
             return;
         }
 
         if(target.getTeamColor() != this.pieceColor) {
             moves.add(new ChessMove(start, cpos(row, col), null));
+        }
+    }
+
+    private void singleMoveHelper(HashSet<ChessMove> moves, int[][] dv, ChessBoard board, int row, int col, ChessPosition start) {
+        for (int[] movement : dv) {
+            int target_row = row+movement[0];
+            int target_col = col+movement[1];
+
+            if (!ChessBoard.inBounds(target_row,target_col)) continue;
+
+            ChessPiece target = board.getPiece(cpos(target_row, target_col));
+            if (target == null || target.getTeamColor() != this.pieceColor) {
+                moves.add(new ChessMove(start, cpos(target_row, target_col), null));
+            }
         }
     }
 
@@ -99,27 +113,17 @@ public class ChessPiece {
             case ROOK:
                 final int[][] ROOK_DIRS   = {{+1,0},{-1,0},{0,+1},{0,-1}};
                 for(int[] directions : ROOK_DIRS) {
-                    sliderPieceAdd(moves, board, myPosition, myPosition.getRow() + directions[0], myPosition.getColumn() + directions[1], directions[0], directions[1]);
+                    recursiveMoveHelper(moves, board, myPosition, myPosition.getRow() + directions[0], myPosition.getColumn() + directions[1], directions[0], directions[1]);
                 }
                 break;
             case KNIGHT:
                 final int[][] KNIGHT_DIRS = {{+1,+2}, {+1, -2}, {-1, +2}, {-1, -2}, {+2, +1}, {+2, -1}, {-2, +1}, {-2, -1}};
-                for (int[] movement : KNIGHT_DIRS) {
-                    int target_row = row+movement[0];
-                    int target_col = col+movement[1];
-
-                    if (!ChessBoard.inBounds(target_row,target_col)) continue;
-
-                    ChessPiece target = board.getPiece(cpos(target_row, target_col));
-                    if (target == null || target.getTeamColor() != this.pieceColor) {
-                        moves.add(new ChessMove(myPosition, cpos(target_row, target_col), null));
-                    }
-                }
+                singleMoveHelper(moves, KNIGHT_DIRS, board, row, col, myPosition);
                 break;
             case BISHOP:
                 final int[][] BISHOP_DIRS = {{+1,+1},{+1,-1},{-1,+1},{-1,-1}};
                 for(int[] directions : BISHOP_DIRS) {
-                    sliderPieceAdd(moves, board, myPosition, myPosition.getRow() + directions[0], myPosition.getColumn() + directions[1], directions[0], directions[1]);
+                    recursiveMoveHelper(moves, board, myPosition, myPosition.getRow() + directions[0], myPosition.getColumn() + directions[1], directions[0], directions[1]);
                 }
                 break;
             case QUEEN:
@@ -128,7 +132,7 @@ public class ChessPiece {
                         {+1,+1},{+1,-1},{-1,+1},{-1,-1}
                 };
                 for(int[] directions : QUEEN_DIRS) {
-                    sliderPieceAdd(moves, board, myPosition, myPosition.getRow() + directions[0], myPosition.getColumn() + directions[1], directions[0], directions[1]);
+                    recursiveMoveHelper(moves, board, myPosition, myPosition.getRow() + directions[0], myPosition.getColumn() + directions[1], directions[0], directions[1]);
                 }
                 break;
             case KING:
@@ -136,16 +140,7 @@ public class ChessPiece {
                         {+1,0},{-1,0},{0,+1},{0,-1},
                         {+1,+1},{+1,-1},{-1,+1},{-1,-1}
                 };
-                for (int[] movement : KING_DIRS) {
-                    int target_row = row + movement[0];
-                    int target_col = col + movement[1];
-                    if (!ChessBoard.inBounds(target_row, target_col)) continue;
-
-                    ChessPiece target = board.getPiece(cpos(target_row, target_col));
-                    if (target == null || target.getTeamColor() != this.pieceColor) {
-                        moves.add(new ChessMove(myPosition, cpos(target_row, target_col), null));
-                    }
-                }
+                singleMoveHelper(moves, KING_DIRS, board, row, col, myPosition);
                 break;
             case PAWN:
                 final boolean white = (this.pieceColor == ChessGame.TeamColor.WHITE);
@@ -158,18 +153,19 @@ public class ChessPiece {
                 // single forward: check if in bounds and endposition is empty
                 if(ChessBoard.inBounds(row_move, col) && board.getPiece(cpos(row_move, col)) == null) {
                     boolean promote = (row_move == promo_row);
-                    addPawnMove(moves, myPosition, row_move, col, promote);
+                    addPawnMoveHelper(moves, myPosition, row_move, col, promote);
 
-                    //check if on starting row,
+                    //check if on starting row for double moves
                     if (row == start_row) {
                         int row_move2 = row + 2 * direction;
                         if (ChessBoard.inBounds(row_move2, col) && board.getPiece(cpos(row_move2, col)) == null) {
-                            addPawnMove(moves, myPosition, row_move2, col, false);
+                            addPawnMoveHelper(moves, myPosition, row_move2, col, false);
                         }
                     }
 
 
                 }
+                //for diagonal captures
                 for (int directional_move : new int[]{-1, +1}) {
                     final int col_move = col + directional_move;
                     if(!ChessBoard.inBounds(row_move, col_move)) {continue;}
@@ -177,7 +173,7 @@ public class ChessPiece {
                     ChessPiece target_square = board.getPiece(cpos(row_move,col_move));
                     if (target_square != null && target_square.getTeamColor() != this.pieceColor) {
                         final boolean promote = (row_move == promo_row);
-                        addPawnMove(moves, myPosition, row_move, col_move, promote);
+                        addPawnMoveHelper(moves, myPosition, row_move, col_move, promote);
                     }
                 }
             break;
