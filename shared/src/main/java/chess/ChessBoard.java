@@ -56,6 +56,18 @@ public class ChessBoard {
         return board[r - 1][c - 1];
     }
 
+    public void movePiece(ChessPosition startPosition, ChessPosition newPosition, ChessBoard board) {
+        ChessPiece piece = board.getPiece(startPosition);
+        if (piece == null) return;
+
+//        ChessPiece target = board.getPiece(newPosition);
+
+        addPiece(startPosition, null);
+        addPiece(newPosition, piece);
+
+        piece.piecePosition = newPosition;
+    }
+
     /**
      * Sets the board to the default starting board
      * (How the game of chess normally starts)
@@ -80,14 +92,14 @@ public class ChessBoard {
 
         // add white pieces
         for (int c = 1; c <= 8; c++){
-            addPiece(new ChessPosition(1, c), new ChessPiece(ChessGame.TeamColor.WHITE, BackRow[c-1], new ChessPosition(1, c-1)));
-            addPiece(new ChessPosition(2, c), new ChessPiece(ChessGame.TeamColor.WHITE, ChessPiece.PieceType.PAWN, new ChessPosition(2, c-1)));
+            addPiece(new ChessPosition(1, c), new ChessPiece(ChessGame.TeamColor.WHITE, BackRow[c-1], new ChessPosition(1, c)));
+            addPiece(new ChessPosition(2, c), new ChessPiece(ChessGame.TeamColor.WHITE, ChessPiece.PieceType.PAWN, new ChessPosition(2, c)));
         }
 
         // add black pieces
         for (int c = 1; c <= 8; c++) {
-            addPiece(new ChessPosition(8, c), new ChessPiece(ChessGame.TeamColor.BLACK, BackRow[c-1], new ChessPosition(8, c-1)));
-            addPiece(new ChessPosition(7, c), new ChessPiece(ChessGame.TeamColor.BLACK, ChessPiece.PieceType.PAWN, new ChessPosition(7, c-1)));
+            addPiece(new ChessPosition(8, c), new ChessPiece(ChessGame.TeamColor.BLACK, BackRow[c-1], new ChessPosition(8, c)));
+            addPiece(new ChessPosition(7, c), new ChessPiece(ChessGame.TeamColor.BLACK, ChessPiece.PieceType.PAWN, new ChessPosition(7, c)));
         }
     }
 

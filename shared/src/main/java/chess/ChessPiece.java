@@ -51,10 +51,7 @@ public class ChessPiece {
         return pieceColor;
     }
 
-    public void setPosition(ChessBoard board, ChessPosition startPosition,ChessPosition newPosition) {
-        ChessPiece piece = board.getPiece(startPosition);
-        piece.piecePosition = newPosition;
-    }
+
     /**
      * @return which type of chess piece this piece is
      */

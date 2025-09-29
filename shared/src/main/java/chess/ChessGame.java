@@ -14,19 +14,25 @@ public class ChessGame {
 
     private TeamColor turnColor;
     private ChessBoard board;
-    private ChessPosition blackKing;
-    private ChessPosition whiteKing;
+    private ChessPiece blackKing;
+    private ChessPiece whiteKing;
 
     public ChessGame() {
         this.board = new ChessBoard();
         board.resetBoard();
 
         ChessPiece blackKing = board.getPiece(new ChessPosition(8,5));
-        this.blackKing = blackKing.piecePosition;
+        this.blackKing = blackKing;
+        System.out.println(blackKing.piecePosition);
+
         ChessPiece whiteKing = board.getPiece(new ChessPosition(1,5));
-        this.whiteKing = whiteKing.piecePosition;
+        this.whiteKing = whiteKing;
 
         this.turnColor = TeamColor.WHITE;
+    }
+
+    public static void main(String[] args){
+        ChessGame game = new ChessGame();
     }
 
     /**
@@ -61,7 +67,7 @@ public class ChessGame {
      * startPosition
      * <p>
      * Additionally, a move is valid if:
-     * 1. The move falls within that piece's valid moves collection
+     * 1. The move falls within that piece's moves collection
      * 2. It doesn't leave your king in check.
      */
 
@@ -76,6 +82,10 @@ public class ChessGame {
         HashSet<ChessMove> validMoves = new HashSet<>(currentPiece.pieceMoves(board, startPosition));
 
         Iterator<ChessMove> it = validMoves.iterator();
+        while (it.hasNext()) {
+            ChessMove move = it.next();
+
+        }
 
 
 
