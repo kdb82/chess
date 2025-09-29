@@ -21,13 +21,8 @@ public class ChessGame {
         this.board = new ChessBoard();
         board.resetBoard();
 
-        ChessPiece blackKing = board.getPiece(new ChessPosition(8,5));
-        this.blackKing = blackKing;
-        System.out.println(blackKing.piecePosition);
-
-        ChessPiece whiteKing = board.getPiece(new ChessPosition(1,5));
-        this.whiteKing = whiteKing;
-
+        this.blackKing = board.getPiece(new ChessPosition(8,5));
+        this.whiteKing = board.getPiece(new ChessPosition(1,5));
         this.turnColor = TeamColor.WHITE;
     }
 
@@ -59,6 +54,65 @@ public class ChessGame {
         BLACK
     }
 
+    private static class MoveSnapshot {
+        ChessPosition start, end;
+        ChessPiece targetBeforeMove;
+        ChessPiece movingPiece;
+        boolean promoted;
+        ChessPiece.PieceType promotedTo;
+    }
+
+    private MoveSnapshot simulateMove(ChessMove move) {
+        ChessPosition start = move.getStartPosition();
+        ChessPosition end = move.getEndPosition();
+        ChessPiece mover = board.getPiece(start);
+        if (mover == null) return null;
+
+
+        MoveSnapshot snap = new MoveSnapshot();
+        snap.start = start;
+        snap.end = end;
+        snap.targetBeforeMove = board.getPiece(end);
+        snap.movingPiece = mover;
+
+        board.movePiece(start, end, board);
+
+        // Handle promotion
+        ChessPiece moved = board.getPiece(end);
+        boolean reachedBackRank = (end.getRow() == 8 || end.getRow() == 1);
+
+        if (moved != null && moved.getPieceType() == ChessPiece.PieceType.PAWN) {
+            if (reachedBackRank) {
+                if (move.getPromotionPiece() == null) {
+                    throw new RuntimeException("Pawn must promote");
+                }
+                board.addPiece(end, new ChessPiece(moved.getTeamColor(), move.getPromotionPiece(), end));
+                snap.promoted = true;
+                snap.promotedTo = move.getPromotionPiece();
+            }
+        } else if (move.getPromotionPiece() != null) {
+            throw new RuntimeException("Can't promote at that row");
+        }
+
+        return snap;
+    }
+
+
+    private void undoSimulatedMove(MoveSnapshot snap) {
+        if (snap == null) return;
+
+        if (snap.promoted) {
+            board.addPiece(snap.end, new ChessPiece(snap.movingPiece.getTeamColor(), ChessPiece.PieceType.PAWN, snap.end));
+        }
+
+        board.movePiece(snap.end, snap.start, board);
+
+        if (snap.targetBeforeMove != null) {
+            board.addPiece(snap.end, snap.targetBeforeMove);
+        }
+    }
+
+
     /**
      * Gets a valid moves for a piece at the given location
      *
@@ -69,25 +123,41 @@ public class ChessGame {
      * Additionally, a move is valid if:
      * 1. The move falls within that piece's moves collection
      * 2. It doesn't leave your king in check.
+     *
      */
 
     public Collection<ChessMove> validMoves(ChessPosition startPosition) {
-        int row = startPosition.getRow();
-        int col = startPosition.getColumn();
         ChessPiece currentPiece = board.getPiece(startPosition);
-        if (currentPiece == null || currentPiece.getTeamColor() != this.turnColor) {
-            return new HashSet<>(); // no piece or not their turn
-        }
+        if (currentPiece == null) return null;
 
         HashSet<ChessMove> validMoves = new HashSet<>(currentPiece.pieceMoves(board, startPosition));
+        if (validMoves.isEmpty()) return validMoves;
+
+        final TeamColor currentTeamColor = currentPiece.getTeamColor();
 
         Iterator<ChessMove> it = validMoves.iterator();
         while (it.hasNext()) {
             ChessMove move = it.next();
+            MoveSnapshot snap = null;
+            boolean illegal = false;
 
+            try {
+                snap = simulateMove(move);
+                if (snap == null) {
+                    illegal = true;
+                } else if (isInCheck(currentTeamColor)) {
+                    illegal = true;
+                }
+            } catch (IllegalArgumentException e) {
+                illegal = true;
+            } finally {
+                if (snap != null) {
+                    undoSimulatedMove(snap);
+                }
+            }
+
+            if (illegal) it.remove();
         }
-
-
 
         return validMoves;
     }

@@ -38,6 +38,9 @@ public class ChessBoard {
             throw new IllegalArgumentException("Out of bounds: row=" + r + "col=" + c);
         }
         board[r- 1][c - 1] = piece;
+        if (piece != null) {
+            piece.setPiecePosition(position);
+        }
     }
 
     /**
@@ -65,7 +68,7 @@ public class ChessBoard {
         addPiece(startPosition, null);
         addPiece(newPosition, piece);
 
-        piece.piecePosition = newPosition;
+        piece.setPiecePosition(newPosition);
     }
 
     /**

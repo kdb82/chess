@@ -14,10 +14,10 @@ public class ChessPiece {
 
     private final ChessGame.TeamColor pieceColor;
     private final PieceType type;
-    public ChessPosition piecePosition;
+    private ChessPosition piecePosition;
 
     //helper to make new chess position objects
-    private ChessPosition cpos(int row, int col) {
+    private static ChessPosition cpos(int row, int col) {
         return new ChessPosition(row, col);
     }
 
@@ -31,6 +31,10 @@ public class ChessPiece {
         this.pieceColor = pieceColor;
         this.type = type;
     }
+
+    public ChessPosition getPiecePosition() {return this.piecePosition;}
+
+    public void setPiecePosition(ChessPosition position) {this.piecePosition = position;}
 
     /**
      * The various different chess piece options
@@ -48,7 +52,7 @@ public class ChessPiece {
      * @return Which team this chess piece belongs to
      */
     public ChessGame.TeamColor getTeamColor() {
-        return pieceColor;
+        return this.pieceColor;
     }
 
 
