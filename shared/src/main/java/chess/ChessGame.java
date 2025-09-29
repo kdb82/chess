@@ -28,6 +28,10 @@ public class ChessGame {
 
     public static void main(String[] args){
         ChessGame game = new ChessGame();
+
+        var moves = game.validMoves(new ChessPosition(2,3));
+        System.out.println("Moves: " + moves);
+
     }
 
     /**
@@ -77,9 +81,23 @@ public class ChessGame {
 
         board.movePiece(start, end, board);
 
+
+        if (mover.getPieceType() == ChessPiece.PieceType.KING) {
+            if (mover.getTeamColor() == TeamColor.WHITE) whiteKing = mover;
+            else blackKing = mover;
+        }
+
+
         // Handle promotion
         ChessPiece moved = board.getPiece(end);
         boolean reachedBackRank = (end.getRow() == 8 || end.getRow() == 1);
+
+        if (move.getPromotionPiece() != null) {
+            var to = move.getPromotionPiece();
+            if (to == ChessPiece.PieceType.KING || to == ChessPiece.PieceType.PAWN) {
+                throw new RuntimeException("Invalid promotion piece");
+            }
+        }
 
         if (moved != null && moved.getPieceType() == ChessPiece.PieceType.PAWN) {
             if (reachedBackRank) {
@@ -102,7 +120,7 @@ public class ChessGame {
         if (snap == null) return;
 
         if (snap.promoted) {
-            board.addPiece(snap.end, new ChessPiece(snap.movingPiece.getTeamColor(), ChessPiece.PieceType.PAWN, snap.end));
+            board.addPiece(snap.end, snap.movingPiece);
         }
 
         board.movePiece(snap.end, snap.start, board);
@@ -172,6 +190,10 @@ public class ChessGame {
         throw new RuntimeException("Not implemented");
     }
 
+
+    private ChessPosition kingPosition(TeamColor color) {
+        return (color == TeamColor.WHITE) ? whiteKing.getPiecePosition() : blackKing.getPiecePosition();
+    }
     /**
      * Determines if the given team is in check
      *
@@ -218,6 +240,6 @@ public class ChessGame {
      * @return the chessboard
      */
     public ChessBoard getBoard() {
-        throw new RuntimeException("Not implemented");
+        return board;
     }
 }
