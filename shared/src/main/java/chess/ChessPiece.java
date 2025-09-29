@@ -14,10 +14,17 @@ public class ChessPiece {
 
     private final ChessGame.TeamColor pieceColor;
     private final PieceType type;
+    public ChessPosition piecePosition;
 
     //helper to make new chess position objects
     private ChessPosition cpos(int row, int col) {
         return new ChessPosition(row, col);
+    }
+
+    public ChessPiece(ChessGame.TeamColor pieceColor, ChessPiece.PieceType type, ChessPosition position) {
+        this.pieceColor = pieceColor;
+        this.type = type;
+        this.piecePosition = position;
     }
 
     public ChessPiece(ChessGame.TeamColor pieceColor, ChessPiece.PieceType type) {
@@ -44,6 +51,10 @@ public class ChessPiece {
         return pieceColor;
     }
 
+    public void setPosition(ChessBoard board, ChessPosition startPosition,ChessPosition newPosition) {
+        ChessPiece piece = board.getPiece(startPosition);
+        piece.piecePosition = newPosition;
+    }
     /**
      * @return which type of chess piece this piece is
      */

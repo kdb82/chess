@@ -80,14 +80,14 @@ public class ChessBoard {
 
         // add white pieces
         for (int c = 1; c <= 8; c++){
-            addPiece(new ChessPosition(1, c), new ChessPiece(ChessGame.TeamColor.WHITE, BackRow[c-1]));
-            addPiece(new ChessPosition(2, c), new ChessPiece(ChessGame.TeamColor.WHITE, ChessPiece.PieceType.PAWN));
+            addPiece(new ChessPosition(1, c), new ChessPiece(ChessGame.TeamColor.WHITE, BackRow[c-1], new ChessPosition(1, c-1)));
+            addPiece(new ChessPosition(2, c), new ChessPiece(ChessGame.TeamColor.WHITE, ChessPiece.PieceType.PAWN, new ChessPosition(2, c-1)));
         }
 
         // add black pieces
         for (int c = 1; c <= 8; c++) {
-            addPiece(new ChessPosition(8, c), new ChessPiece(ChessGame.TeamColor.BLACK, BackRow[c-1]));
-            addPiece(new ChessPosition(7, c), new ChessPiece(ChessGame.TeamColor.BLACK, ChessPiece.PieceType.PAWN));
+            addPiece(new ChessPosition(8, c), new ChessPiece(ChessGame.TeamColor.BLACK, BackRow[c-1], new ChessPosition(8, c-1)));
+            addPiece(new ChessPosition(7, c), new ChessPiece(ChessGame.TeamColor.BLACK, ChessPiece.PieceType.PAWN, new ChessPosition(7, c-1)));
         }
     }
 

@@ -1,6 +1,8 @@
 package chess;
 
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.Iterator;
 
 /**
  * For a class that can manage a chess game, making moves on a board
@@ -10,20 +12,28 @@ import java.util.Collection;
  */
 public class ChessGame {
 
-    private TeamColor teamTurn;
+    private TeamColor turnColor;
     private ChessBoard board;
+    private ChessPosition blackKing;
+    private ChessPosition whiteKing;
 
     public ChessGame() {
         this.board = new ChessBoard();
         board.resetBoard();
-        this.teamTurn = TeamColor.WHITE;
+
+        ChessPiece blackKing = board.getPiece(new ChessPosition(8,5));
+        this.blackKing = blackKing.piecePosition;
+        ChessPiece whiteKing = board.getPiece(new ChessPosition(1,5));
+        this.whiteKing = whiteKing.piecePosition;
+
+        this.turnColor = TeamColor.WHITE;
     }
 
     /**
      * @return Which team's turn it is
      */
     public TeamColor getTeamTurn() {
-        return this.teamTurn;
+        return this.turnColor;
     }
 
     /**
@@ -32,7 +42,7 @@ public class ChessGame {
      * @param team the team whose turn it is
      */
     public void setTeamTurn(TeamColor team) {
-        this.teamTurn = team;
+        this.turnColor = team;
     }
 
     /**
@@ -49,14 +59,27 @@ public class ChessGame {
      * @param startPosition the piece to get valid moves for
      * @return Set of valid moves for requested piece, or null if no piece at
      * startPosition
-     *
+     * <p>
      * Additionally, a move is valid if:
      * 1. The move falls within that piece's valid moves collection
      * 2. It doesn't leave your king in check.
      */
 
     public Collection<ChessMove> validMoves(ChessPosition startPosition) {
-        throw new RuntimeException("Not implemented");
+        int row = startPosition.getRow();
+        int col = startPosition.getColumn();
+        ChessPiece currentPiece = board.getPiece(startPosition);
+        if (currentPiece == null || currentPiece.getTeamColor() != this.turnColor) {
+            return new HashSet<>(); // no piece or not their turn
+        }
+
+        HashSet<ChessMove> validMoves = new HashSet<>(currentPiece.pieceMoves(board, startPosition));
+
+        Iterator<ChessMove> it = validMoves.iterator();
+
+
+
+        return validMoves;
     }
 
     /**
