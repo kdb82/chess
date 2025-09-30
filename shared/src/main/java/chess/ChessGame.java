@@ -109,7 +109,7 @@ public class ChessGame {
             }
         }
 
-        //If pawn, promote
+        //if piece == pawn, promote
         if (moved != null && moved.getPieceType() == ChessPiece.PieceType.PAWN) {
             if (reachedBackRank) {
                 if (move.getPromotionPiece() == null) {
