@@ -109,6 +109,7 @@ public class ChessGame {
             }
         }
 
+        //If pawn, promote
         if (moved != null && moved.getPieceType() == ChessPiece.PieceType.PAWN) {
             if (reachedBackRank) {
                 if (move.getPromotionPiece() == null) {
@@ -177,7 +178,7 @@ public class ChessGame {
                 } else if (isInCheck(currentTeamColor)) {
                     illegal = true;
                 }
-            } catch (IllegalArgumentException e) {
+            } catch (RuntimeException e) {
                 illegal = true;
             } finally {
                 if (snap != null) {
@@ -212,6 +213,10 @@ public class ChessGame {
         var legalMoves = validMoves(start);
         if (legalMoves.isEmpty() || !legalMoves.contains(move)) throw new InvalidMoveException("Not a valid move");
 
+        ChessPiece capturePiece = board.getPiece(move.getEndPosition());
+        if (capturePiece != null && capturePiece.getPieceType() == ChessPiece.PieceType.KING) {
+            throw new InvalidMoveException("You cannot capture the king");
+        }
 
         simulateMove(move);
         turnColor = (turnColor == TeamColor.WHITE) ? TeamColor.BLACK : TeamColor.WHITE;
@@ -275,7 +280,7 @@ public class ChessGame {
      * @return True if the specified team is in stalemate, otherwise false
      */
     public boolean isInStalemate(TeamColor teamColor) {
-        if (isInCheckmate(teamColor)) return false;
+        if (isInCheck(teamColor)) return false;
 
         for (int r = 1; r <= 8; r++) {
             for (int c = 1; c <= 8; c++) {
