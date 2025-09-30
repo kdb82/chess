@@ -249,6 +249,17 @@ public class ChessGame {
         return false;
     }
 
+    private boolean hasNoLegalMove(TeamColor color) {
+        for (int r = 1; r <= 8; r++) {
+            for (int c = 1; c <= 8; c++) {
+                ChessPosition pos = new ChessPosition(r, c);
+                ChessPiece p = board.getPiece(pos);
+                if (p != null && p.getTeamColor() == color && !validMoves(pos).isEmpty()) return false;
+            }
+        }
+        return true;
+    }
+
     /**
      * Determines if the given team is in checkmate
      *
@@ -256,20 +267,7 @@ public class ChessGame {
      * @return True if the specified team is in checkmate
      */
     public boolean isInCheckmate(TeamColor teamColor) {
-        if (!isInCheck(teamColor)) return false;
-
-
-        for (int r = 1; r <= 8; r++) {
-            for (int c = 1; c <= 8; c++) {
-                ChessPosition pos = new ChessPosition(r, c);
-                ChessPiece piece = board.getPiece(pos);
-                if (piece == null || piece.getTeamColor() != teamColor) continue;
-
-                Collection<ChessMove> legal = validMoves(pos);
-                if (!legal.isEmpty()) return false;
-            }
-        }
-        return true;
+        return isInCheck(teamColor) && hasNoLegalMove(teamColor);
     }
 
     /**
@@ -280,19 +278,7 @@ public class ChessGame {
      * @return True if the specified team is in stalemate, otherwise false
      */
     public boolean isInStalemate(TeamColor teamColor) {
-        if (isInCheck(teamColor)) return false;
-
-        for (int r = 1; r <= 8; r++) {
-            for (int c = 1; c <= 8; c++) {
-                ChessPosition pos = new ChessPosition(r, c);
-                ChessPiece piece = board.getPiece(pos);
-                if (piece == null || piece.getTeamColor() != teamColor) continue;
-
-                Collection<ChessMove> legal = validMoves(pos);
-                if (!legal.isEmpty()) return false;
-            }
-        }
-        return true;
+        return !isInCheck(teamColor) && hasNoLegalMove(teamColor);
     }
 
     /**
