@@ -194,6 +194,24 @@ public class ChessGame {
     private ChessPosition kingPosition(TeamColor color) {
         return (color == TeamColor.WHITE) ? whiteKing.getPiecePosition() : blackKing.getPiecePosition();
     }
+
+    private Collection<ChessMove> getOpposingMoves(TeamColor currentTurnColor) {
+        HashSet<ChessMove> opposingMoves = new HashSet<>();
+        for (int r = 1; r <= 8; r++) {
+            for (int c = 1; c <= 8; c++) {
+                ChessPosition position = new ChessPosition(r, c);
+                ChessPiece piece = board.getPiece(position);
+                if (piece.getTeamColor() == currentTurnColor) {
+                    continue;
+                } else {
+                    HashSet<ChessMove> move = new HashSet<>(piece.pieceMoves(board, position));
+                    opposingMoves.addAll(move);
+                }
+            }
+        }
+        return opposingMoves;
+    }
+
     /**
      * Determines if the given team is in check
      *
