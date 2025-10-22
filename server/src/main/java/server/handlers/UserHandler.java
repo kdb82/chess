@@ -73,7 +73,7 @@ public class UserHandler{
             ctx.status(400).json(Map.of("message", "Error: bad request"));
         }
         catch(UnauthorizedException ex) {
-            ctx.status(401).json(Map.of("message", "incorrect username or password"));
+            ctx.status(401).json(Map.of("message", "incorrect username or password or user nonexistent"));
         } catch (DataAccessException e) {
             ctx.status(500).json(Map.of("message", e.getMessage()));
         }
