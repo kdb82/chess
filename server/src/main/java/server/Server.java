@@ -8,7 +8,6 @@ import server.handlers.*;
 import service.ClearService;
 import service.GameService;
 import service.UserService;
-import java.util.Random;
 
 public class Server {
 
@@ -32,7 +31,7 @@ public class Server {
         GameService gameService = new GameService(gameDao, authDao);
         GameHandler gameHandler = new GameHandler(serializer,gameService);
 
-        ClearService clearService = new ClearService(userDao, authDao);
+        ClearService clearService = new ClearService(userDao, authDao, gameDao);
         ClearHandler clearHandler = new ClearHandler(clearService);
 
         registerEndpoints(userHandler, gameHandler, clearHandler);
@@ -57,7 +56,9 @@ public class Server {
         app.post("/session", userHandler::login);
         app.delete("/session",  userHandler::logout);
 
-
+        app.get("/game", gameHandler::listGames);
+        app.post("/game", gameHandler::createGame);
+        app.put("/game", gameHandler::joinGame);
 
     }
 }

@@ -8,18 +8,18 @@ import results.ClearResult;
 public class ClearService {
     private final AuthDao authDao;
     private final UserDao userDao;
-//    private final GameDao gameDao;
+    private final GameDao gameDao;
 
-    public ClearService(UserDao userDao, AuthDao authDao) {
+    public ClearService(UserDao userDao, AuthDao authDao, GameDao gameDao) {
         this.authDao = authDao;
         this.userDao = userDao;
-//        this.gameDao = gameDao;
+        this.gameDao = gameDao;
     }
 
     public ClearResult clear(){
         authDao.clear();
         userDao.clear();
-//        gameDao.clear();
+        gameDao.clear();
 
 
 

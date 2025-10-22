@@ -1,6 +1,5 @@
 package server.handlers;
 
-import com.google.gson.Gson;
 import io.javalin.http.Context;
 import service.ClearService;
 
@@ -14,7 +13,7 @@ public class ClearHandler {
     }
 
     public void clear(Context ctx) {
-        var result = clearService.clear();
+        clearService.clear();
         ctx.status(200).json(Map.of());
 
     }

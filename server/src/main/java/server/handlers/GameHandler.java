@@ -9,12 +9,9 @@ import requests.GameRequest;
 import requests.JoinGameRequest;
 import requests.ListGameRequest;
 import results.CreateGameResult;
-import results.GameSummary;
-import results.JoinGameResult;
 import results.ListGamesResult;
 import service.GameService;
 
-import java.util.List;
 import java.util.Map;
 
 public class GameHandler{
@@ -38,7 +35,7 @@ public class GameHandler{
                 ctx.status(400).json(Map.of("message", "Error: bad request"));
             }
 
-            JoinGameResult result = gameService.joinGame(request, token);
+            gameService.joinGame(request, token);
             ctx.status(200).json(Map.of());
 
 
