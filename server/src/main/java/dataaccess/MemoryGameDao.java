@@ -36,11 +36,11 @@ public class MemoryGameDao implements GameDao {
     }
 
     @Override
-    public List<GameData> listGames(String token) {
+    public List<GameData> listGames() {
         return new ArrayList<>(games.values());
     }
 
-    public void updateGamePlayer(int gameID, String playerColor, String username) throws DataAccessException {
+    public GameData updateGamePlayer(int gameID, String playerColor, String username) throws DataAccessException {
         GameData game = games.get(gameID);
         if (game == null) {
             throw new DataAccessException("Game not found");
@@ -57,6 +57,7 @@ public class MemoryGameDao implements GameDao {
 
             GameData updated = new GameData(game.gameID(), username, game.blackUsername(), game.gameName(), game.game());
             games.put(gameID, updated);
+            return updated;
 
         } else {
             if (game.blackUsername() != null) {
@@ -64,6 +65,7 @@ public class MemoryGameDao implements GameDao {
             }
             GameData updated = new GameData(game.gameID(), game.whiteUsername(), username, game.gameName(), game.game());
             games.put(gameID, updated);
+            return updated;
         }
     }
 

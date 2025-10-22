@@ -4,9 +4,13 @@ import dataaccess.AuthDao;
 import dataaccess.DataAccessException;
 import dataaccess.GameDao;
 import dataaccess.UserDao;
+import exceptions.AlreadyTakenException;
+import exceptions.BadRequestException;
 import exceptions.UnauthorizedException;
 import model.AuthData;
 import model.GameData;
+import requests.GameRequest;
+import requests.JoinGameRequest;
 import requests.ListRequest;
 import results.CreateGameResult;
 import results.GameSummary;
@@ -26,11 +30,34 @@ public class GameService {
         this.authDao = authDao;
     }
 
-    public JoinGameResult joinGame(int gameID, String username) throws DataAccessException {
-        return null;
+    public JoinGameResult joinGame(JoinGameRequest request, String authToken) throws DataAccessException {
+        if (request == null) {
+            throw new BadRequestException("request is null");
+        }
+        if (request.gameID() <= 0 || request.playerColor() == null) {
+            throw new BadRequestException("gameID and playerColor can't be null");
+        }
+
+        AuthData authData = authDao.getAuth(authToken);
+        if (authData == null) {
+            throw new UnauthorizedException("Unauthorized");
+        }
+        String username = authData.username();
+
+        GameData game =  gameDao.getGame(request.gameID());
+        if (game == null) {throw new BadRequestException("Game not found");}
+
+        String playerColor = normalizeColor(request.playerColor());
+        if (playerColor == null) {
+            throw new BadRequestException("playerColor can't be null");
+        }
+
+        gameDao.updateGamePlayer(request.gameID(), playerColor, username);
+
+        return new JoinGameResult();
     }
 
-    public CreateGameResult createGame(int gameID, String username) throws DataAccessException {
+    public CreateGameResult createGame(GameRequest request) throws DataAccessException {
         return null;
     }
 
@@ -49,5 +76,11 @@ public class GameService {
         }
 
         return new ListGamesResult(gamesList);
+    }
+
+    private static String normalizeColor(String c) {
+        if (c == null) return null;
+        String t = c.trim().toUpperCase();
+        return ("WHITE".equals(t) || "BLACK".equals(t)) ? t : null;
     }
 }
