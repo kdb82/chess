@@ -4,6 +4,7 @@ import Exceptions.AlreadyTakenException;
 import Exceptions.BadRequestException;
 import Exceptions.UnauthorizedException;
 import com.google.gson.Gson;
+import dataaccess.DataAccessException;
 import io.javalin.http.Context;
 import requests.LoginRequest;
 import requests.LogoutRequest;
@@ -40,10 +41,11 @@ public class UserHandler{
             ctx.status(200).json(result);
         }
         catch(AlreadyTakenException ex) {
-            ctx.status(402).json(Map.of("message", "username already taken"));
-        }
-        catch(BadRequestException ex) {
+            ctx.status(403).json(Map.of("message", "username already taken"));
+        } catch(BadRequestException ex) {
             ctx.status(400).json(Map.of("message", ex.getMessage()));
+        } catch (DataAccessException e) {
+            ctx.status(500).json(Map.of("message", e.getMessage()));
         }
 
     }
