@@ -20,7 +20,7 @@ public class MemoryGameDao implements GameDao {
     }
 
     @Override
-    public void createGame(String gameName) throws DataAccessException {
+    public int createGame(String gameName) throws DataAccessException {
         if (gameName.isBlank()) {
             throw new DataAccessException("gamename required");
         }
@@ -28,6 +28,7 @@ public class MemoryGameDao implements GameDao {
         ChessGame game = new ChessGame();
         GameData gameData = new GameData(id, null, null, gameName, game);
         games.put(id, gameData);
+        return id;
     }
 
     @Override

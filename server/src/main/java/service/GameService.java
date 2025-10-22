@@ -57,8 +57,19 @@ public class GameService {
         return new JoinGameResult();
     }
 
-    public CreateGameResult createGame(GameRequest request) throws DataAccessException {
-        return null;
+    public CreateGameResult createGame(GameRequest request, String authToken) throws DataAccessException {
+        AuthData authData = authDao.getAuth(authToken);
+        if (authData == null) {
+            throw new UnauthorizedException("Unauthorized");
+        }
+
+        if (request == null || request.gameName() == null) {
+            throw new BadRequestException("request is null");
+        }
+
+        int id = gameDao.createGame(request.gameName());
+
+        return new CreateGameResult(id);
     }
 
     public ListGamesResult listGames(ListRequest request) throws DataAccessException {
