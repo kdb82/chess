@@ -1,8 +1,8 @@
 package server.handlers;
 
-import Exceptions.AlreadyTakenException;
-import Exceptions.BadRequestException;
-import Exceptions.UnauthorizedException;
+import exceptions.AlreadyTakenException;
+import exceptions.BadRequestException;
+import exceptions.UnauthorizedException;
 import com.google.gson.Gson;
 import dataaccess.DataAccessException;
 import io.javalin.http.Context;
@@ -73,25 +73,29 @@ public class UserHandler{
             ctx.status(400).json(Map.of("message", "Error: bad request"));
         }
         catch(UnauthorizedException ex) {
-            ctx.status(401).json(Map.of("message", "user already exists"));
+            ctx.status(401).json(Map.of("message", "incorrect username or password"));
+        } catch (DataAccessException e) {
+            ctx.status(500).json(Map.of("message", e.getMessage()));
         }
     }
 
     public void logout(Context ctx) {
         try {
             String token = ctx.header("authorization");
-            if (token != null && token.isBlank()) {
+            if (token == null || token.isBlank()) {
                 ctx.status(400).json(Map.of("message", "Error: bad request"));
                 return;
             }
 
-            LogoutRequest request = serializer.fromJson(token, LogoutRequest.class);
+            LogoutRequest request = new  LogoutRequest(token);
             userService.logout(request);
             ctx.status(200).json(Map.of());
 
         }
         catch(UnauthorizedException ex) {
             ctx.status(401).json(Map.of("message", "user already exists"));
+        } catch (DataAccessException e) {
+            ctx.status(500).json(Map.of("message", e.getMessage()));
         }
     }
 }

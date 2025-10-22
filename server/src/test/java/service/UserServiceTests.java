@@ -1,6 +1,6 @@
 package service;
 
-import Exceptions.AlreadyTakenException;
+import exceptions.AlreadyTakenException;
 import dataaccess.MemoryAuthDao;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

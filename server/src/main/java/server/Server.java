@@ -1,8 +1,10 @@
 package server;
 
 import com.google.gson.Gson;
+import dataaccess.AuthDao;
 import dataaccess.MemoryAuthDao;
 import dataaccess.MemoryUserDao;
+import dataaccess.UserDao;
 import io.javalin.*;
 import io.javalin.json.JavalinGson;
 import server.handlers.*;
@@ -21,22 +23,19 @@ public class Server {
         });
 
         // Register your endpoints and exception handlers here.
-        var userDao = new MemoryUserDao();
-        var authDao = new MemoryAuthDao();
+        UserDao userDao = new MemoryUserDao();
+        AuthDao authDao = new MemoryAuthDao();
 
         UserService userService = new UserService(userDao, authDao);
         UserHandler userHandler = new UserHandler(serializer, userService);
+
         GameHandler gameHandler = new GameHandler();
 
-        registerendpoints(userHandler, gameHandler);
+        registerEndpoints(userHandler, gameHandler);
 
     }
 
     public int run(int desiredPort) {
-        if (desiredPort == 0) {
-            Random random = new Random();
-            desiredPort = random.nextInt(60000-50000+1) + 50000;
-        }
         app.start(desiredPort);
         return app.port();
     }
@@ -45,7 +44,7 @@ public class Server {
         app.stop();
     }
 
-    private void registerendpoints(UserHandler userHandler, GameHandler gameHandler) {
+    private void registerEndpoints(UserHandler userHandler, GameHandler gameHandler) {
 
         app.delete("/db", ctx -> {
 //            ClearHandler.clear();
@@ -54,7 +53,7 @@ public class Server {
 
         app.post("/user", userHandler::register);
         app.post("/session", userHandler::login);
-        app.post("/session",  userHandler::logout);
+        app.delete("/session",  userHandler::logout);
 
 
     }

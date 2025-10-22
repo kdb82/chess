@@ -26,5 +26,7 @@ public interface AuthDao {
      */
     AuthData getAuth(String token) throws DataAccessException;
 
+    void deleteAuth(AuthData authData);
+
 }
 
