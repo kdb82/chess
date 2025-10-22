@@ -1,4 +1,6 @@
 package results;
 
-public record ListGamesResult() {
+import java.util.List;
+
+public record ListGamesResult(List<GameSummary> games) {
 }
