@@ -6,6 +6,7 @@ import io.javalin.*;
 import io.javalin.json.JavalinGson;
 import server.handlers.*;
 import service.ClearService;
+import service.GameService;
 import service.UserService;
 import java.util.Random;
 
@@ -23,12 +24,13 @@ public class Server {
         // Register your endpoints and exception handlers here.
         UserDao userDao = new MemoryUserDao();
         AuthDao authDao = new MemoryAuthDao();
-//        GameDao gameDao = new MemoryGameDao();
+        GameDao gameDao = new MemoryGameDao();
 
         UserService userService = new UserService(userDao, authDao);
         UserHandler userHandler = new UserHandler(serializer, userService);
 
-        GameHandler gameHandler = new GameHandler();
+        GameService gameService = new GameService(gameDao, authDao);
+        GameHandler gameHandler = new GameHandler(serializer,gameService);
 
         ClearService clearService = new ClearService(userDao, authDao);
         ClearHandler clearHandler = new ClearHandler(clearService);
@@ -54,6 +56,7 @@ public class Server {
         app.post("/user", userHandler::register);
         app.post("/session", userHandler::login);
         app.delete("/session",  userHandler::logout);
+
 
 
     }

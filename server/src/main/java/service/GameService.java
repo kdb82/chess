@@ -3,21 +3,18 @@ package service;
 import dataaccess.AuthDao;
 import dataaccess.DataAccessException;
 import dataaccess.GameDao;
-import dataaccess.UserDao;
-import exceptions.AlreadyTakenException;
 import exceptions.BadRequestException;
 import exceptions.UnauthorizedException;
 import model.AuthData;
 import model.GameData;
 import requests.GameRequest;
 import requests.JoinGameRequest;
-import requests.ListRequest;
+import requests.ListGameRequest;
 import results.CreateGameResult;
 import results.GameSummary;
 import results.JoinGameResult;
 import results.ListGamesResult;
 
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -25,12 +22,12 @@ public class GameService {
     private final GameDao gameDao;
     private final AuthDao authDao;
 
-    public GameService(GameDao gameDao, UserDao userDao, AuthDao authDao) {
+    public GameService(GameDao gameDao, AuthDao authDao) {
         this.gameDao = gameDao;
         this.authDao = authDao;
     }
 
-    public JoinGameResult joinGame(JoinGameRequest request, String authToken) throws DataAccessException {
+    public JoinGameResult joinGame(JoinGameRequest request, String authToken) throws DataAccessException,BadRequestException, UnauthorizedException {
         if (request == null) {
             throw new BadRequestException("request is null");
         }
@@ -72,7 +69,7 @@ public class GameService {
         return new CreateGameResult(id);
     }
 
-    public ListGamesResult listGames(ListRequest request) throws DataAccessException {
+    public ListGamesResult listGames(ListGameRequest request) throws DataAccessException {
         String token = request.authToken();
 
         AuthData authData = authDao.getAuth(token);
