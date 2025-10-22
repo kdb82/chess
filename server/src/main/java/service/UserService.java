@@ -2,6 +2,7 @@ package service;
 
 import Exceptions.AlreadyTakenException;
 import Exceptions.BadRequestException;
+import Exceptions.UnauthorizedException;
 import dataaccess.DataAccessException;
 import dataaccess.MemoryAuthDao;
 import dataaccess.MemoryUserDao;
@@ -44,10 +45,41 @@ public class UserService {
         return new RegisterResult(username, token);
     }
 
-    public LoginResult login(LoginRequest request) {
-        return null;
+    public LoginResult login(LoginRequest request) throws UnauthorizedException, BadRequestException{
+        validateLoginData(request);
+        var username = request.username();
+        var requestPassword = request.password();
+
+        UserData user = userDao.getUser(username);
+        if (user == null) {
+            throw new UnauthorizedException("username or password is invalid");
+        }
+
+        verifyPassword(requestPassword, user.password());
+
+        AuthData authData = new AuthData(generateToken(), username);
+        authDao.createAuth(authData);
+
+        return new LoginResult(user.username(), user.password());
     }
 
     public void logout(LogoutRequest request) {
+        String token = request.authToken();
+
+
     }
+
+    private static void validateLoginData(LoginRequest request) throws BadRequestException {
+        if (request.username().isBlank() || request.password().isBlank()) {
+            throw new BadRequestException("username or password or email is blank");
+        }
+    }
+
+    private static void verifyPassword(String requestedPassword, String recievedPassword) throws UnauthorizedException {
+        if (!requestedPassword.equals(recievedPassword)) {
+            throw new UnauthorizedException("password is incorrect");
+        }
+
+    }
+
 }
