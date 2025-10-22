@@ -27,12 +27,20 @@ public class GameHandler{
     public void joinGame(Context ctx) {
         try {
             String token = ctx.header("authorization");
-            assert token != null;
-            checkToken(token, ctx);
+            if (token == null || token.isBlank()) {
+                ctx.status(400).json(Map.of("message", "Missing authorization header"));
+                return;
+            }
+            String body = ctx.body();
+            if (body.isBlank()) {
+                ctx.status(400).json(Map.of("message", "Missing body header"));
+                return;
+            }
 
-            JoinGameRequest request = serializer.fromJson(ctx.body(), JoinGameRequest.class);
+            JoinGameRequest request = serializer.fromJson(body, JoinGameRequest.class);
             if (request.gameID() <= 0 || request.playerColor().isBlank()) {
                 ctx.status(400).json(Map.of("message", "Error: bad request"));
+                return;
             }
 
             gameService.joinGame(request, token);
@@ -42,7 +50,7 @@ public class GameHandler{
         } catch (DataAccessException e) {
             ctx.status(500).json(Map.of("message", "Error: internal server error"));
         } catch (UnauthorizedException e) {
-            ctx.status(401).json(Map.of("message", "Unauthorized"));
+            ctx.status(401).json(Map.of("message", "Error: unauthorized"));
         } catch (BadRequestException e) {
             ctx.status(400).json(Map.of("message", "Error: bad request"));
         }
@@ -53,8 +61,10 @@ public class GameHandler{
     public void listGames(Context ctx) {
         try {
             String token = ctx.header("authorization");
-            assert token != null;
-            checkToken(token, ctx);
+            if (token == null || token.isBlank()) {
+                ctx.status(400).json(Map.of("message", "Missing authorization header"));
+                return;
+            }
 
             ListGameRequest request = new ListGameRequest(token);
             ListGamesResult result = gameService.listGames(request);
@@ -63,7 +73,7 @@ public class GameHandler{
         } catch (DataAccessException e) {
             ctx.status(500).json(Map.of("message", "Error: internal server error"));
         } catch (UnauthorizedException e) {
-            ctx.status(401).json(Map.of("message", "Unauthorized"));
+            ctx.status(401).json(Map.of("message", "Error: unauthorized"));
         } catch (BadRequestException e) {
             ctx.status(400).json(Map.of("message", "Error: bad request"));
         }
@@ -73,8 +83,10 @@ public class GameHandler{
     public void createGame(Context ctx) {
         try {
             String token = ctx.header("authorization");
-            assert token != null;
-            checkToken(token, ctx);
+            if (token == null || token.isBlank()) {
+                ctx.status(400).json(Map.of("message", "Missing authorization header"));
+                return;
+            }
 
             GameRequest request = serializer.fromJson(ctx.body(), GameRequest.class);
             CreateGameResult result = gameService.createGame(request, token);
@@ -85,12 +97,8 @@ public class GameHandler{
         } catch (BadRequestException e) {
             ctx.status(400).json(Map.of("message", "Error: bad request"));
         } catch (UnauthorizedException e) {
-            ctx.status(401).json(Map.of("message", "Unauthorized"));
+            ctx.status(401).json(Map.of("message", "Error: unauthorized"));
         }
     }
-    private void checkToken(String token, Context ctx) {
-        if (token.isBlank()) {
-            ctx.status(400).json(Map.of("message", "Missing authorization header"));
-        }
-    }
+
 }

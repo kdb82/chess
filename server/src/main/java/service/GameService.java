@@ -27,7 +27,7 @@ public class GameService {
         this.authDao = authDao;
     }
 
-    public JoinGameResult joinGame(JoinGameRequest request, String authToken) throws DataAccessException,BadRequestException, UnauthorizedException {
+    public void joinGame(JoinGameRequest request, String authToken) throws DataAccessException,BadRequestException, UnauthorizedException {
         if (request == null) {
             throw new BadRequestException("request is null");
         }
@@ -49,18 +49,28 @@ public class GameService {
             throw new BadRequestException("playerColor can't be null");
         }
 
-        gameDao.updateGamePlayer(request.gameID(), playerColor, username);
+        try {
+            gameDao.updateGamePlayer(request.gameID(), playerColor, username);
+        } catch (DataAccessException ex) {
+            String m = ex.getMessage() == null ? "" : ex.getMessage().toLowerCase();
+            if (m.contains("already taken") || m.contains("white already taken") || m.contains("black already taken")) {
+                throw new exceptions.AlreadyTakenException("already taken");
+            }
+            if (m.contains("invalid color") || m.contains("not found")) {
+                throw new BadRequestException("bad request");
+            }
+            throw ex; // 500
+        }
 
-        return new JoinGameResult();
     }
 
-    public CreateGameResult createGame(GameRequest request, String authToken) throws DataAccessException {
+    public CreateGameResult createGame(GameRequest request, String authToken) throws DataAccessException, UnauthorizedException, BadRequestException {
         AuthData authData = authDao.getAuth(authToken);
         if (authData == null) {
             throw new UnauthorizedException("Unauthorized");
         }
 
-        if (request == null || request.gameName() == null) {
+        if (request == null || request.gameName() == null || request.gameName().isBlank()) {
             throw new BadRequestException("request is null");
         }
 
