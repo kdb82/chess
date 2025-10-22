@@ -21,7 +21,6 @@ public class UserService {
         this.authDao = authDao;
     }
 
-
     public static String generateToken() {
         return UUID.randomUUID().toString();
     }
