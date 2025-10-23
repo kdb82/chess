@@ -26,13 +26,16 @@ public class UserHandler{
     public void register(Context ctx) {
         try {
             String body = ctx.body();
-            if (body.isBlank()) {
+            if (body == null || body.isBlank()) {
                 ctx.status(400).json(Map.of("message", "Error: bad request"));
                 return;
             }
 
             RegisterRequest request = serializer.fromJson(body, RegisterRequest.class);
-            if (request.email().isBlank() ||  request.password().isBlank() || request.username().isBlank()) {
+            if (request == null
+                    || request.username() == null || request.username().isBlank()
+                    || request.password() == null || request.password().isBlank()
+                    || request.email() == null    || request.email().isBlank()) {
                 ctx.status(400).json(Map.of("message", "Error: bad request"));
                 return;
             }
@@ -41,7 +44,7 @@ public class UserHandler{
             ctx.status(200).json(result);
         }
         catch(AlreadyTakenException ex) {
-            ctx.status(403).json(Map.of("message", "username already taken"));
+            ctx.status(403).json(Map.of("message", "Error: username already taken"));
         } catch(BadRequestException ex) {
             ctx.status(400).json(Map.of("message", ex.getMessage()));
         } catch (DataAccessException e) {
@@ -59,7 +62,7 @@ public class UserHandler{
             }
 
             LoginRequest request = serializer.fromJson(body, LoginRequest.class);
-            if (request.password().isBlank() || request.username().isBlank()) {
+            if (request.password() == null || request.username() == null ||request.password().isBlank() || request.username().isBlank()) {
                 ctx.status(400).json(Map.of("message", "Error: bad request"));
                 return;
             }
@@ -73,7 +76,7 @@ public class UserHandler{
             ctx.status(400).json(Map.of("message", "Error: bad request"));
         }
         catch(UnauthorizedException ex) {
-            ctx.status(401).json(Map.of("message", "incorrect username or password or user nonexistent"));
+            ctx.status(401).json(Map.of("message", "Error: incorrect username or password or user nonexistent"));
         } catch (DataAccessException e) {
             ctx.status(500).json(Map.of("message", e.getMessage()));
         }
@@ -95,7 +98,7 @@ public class UserHandler{
         catch(UnauthorizedException ex) {
             ctx.status(401).json(Map.of("message", "user already exists"));
         } catch (DataAccessException e) {
-            ctx.status(500).json(Map.of("message", e.getMessage()));
+            ctx.status(401).json(Map.of("message", e.getMessage()));
         }
     }
 }

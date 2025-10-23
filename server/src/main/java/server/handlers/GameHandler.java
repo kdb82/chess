@@ -1,7 +1,9 @@
 package server.handlers;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonSyntaxException;
 import dataaccess.DataAccessException;
+import exceptions.AlreadyTakenException;
 import exceptions.BadRequestException;
 import exceptions.UnauthorizedException;
 import io.javalin.http.Context;
@@ -38,7 +40,7 @@ public class GameHandler{
             }
 
             JoinGameRequest request = serializer.fromJson(body, JoinGameRequest.class);
-            if (request.gameID() <= 0 || request.playerColor().isBlank()) {
+            if (request.playerColor() == null || request.gameID() <= 0 || request.playerColor().isBlank()) {
                 ctx.status(400).json(Map.of("message", "Error: bad request"));
                 return;
             }
@@ -48,11 +50,13 @@ public class GameHandler{
 
 
         } catch (DataAccessException e) {
-            ctx.status(500).json(Map.of("message", "Error: internal server error"));
+            ctx.status(401).json(Map.of("message", e.getMessage()));
         } catch (UnauthorizedException e) {
             ctx.status(401).json(Map.of("message", "Error: unauthorized"));
         } catch (BadRequestException e) {
-            ctx.status(400).json(Map.of("message", "Error: bad request"));
+            ctx.status(400).json(Map.of("message", e.getMessage()));
+        } catch (AlreadyTakenException e) {
+            ctx.status(403).json(Map.of("message", "Error: already taken"));
         }
 
 
@@ -71,7 +75,7 @@ public class GameHandler{
             ctx.status(200).json(result);
 
         } catch (DataAccessException e) {
-            ctx.status(500).json(Map.of("message", "Error: internal server error"));
+            ctx.status(401).json(Map.of("message", "Error: could not list games"));
         } catch (UnauthorizedException e) {
             ctx.status(401).json(Map.of("message", "Error: unauthorized"));
         } catch (BadRequestException e) {
@@ -93,7 +97,7 @@ public class GameHandler{
             ctx.status(200).json(result);
 
         } catch (DataAccessException e) {
-            ctx.status(500).json(Map.of("message", "Error: internal server error"));
+            ctx.status(401).json(Map.of("message", "Error: could not create game"));
         } catch (BadRequestException e) {
             ctx.status(400).json(Map.of("message", "Error: bad request"));
         } catch (UnauthorizedException e) {

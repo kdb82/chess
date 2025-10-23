@@ -21,7 +21,7 @@ public class MemoryAuthDao implements AuthDao {
     @Override
     public AuthData getAuth(String token) throws DataAccessException {
         if (authDataHashMap.get(token) == null) {
-            throw new DataAccessException("auth nonexistent");
+            throw new DataAccessException("Error: auth nonexistent");
         }
         return authDataHashMap.get(token);
     }

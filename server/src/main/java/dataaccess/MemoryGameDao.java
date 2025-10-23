@@ -22,7 +22,7 @@ public class MemoryGameDao implements GameDao {
     @Override
     public int createGame(String gameName) throws DataAccessException {
         if (gameName.isBlank()) {
-            throw new DataAccessException("gamename required");
+            throw new DataAccessException("Error: could not create game");
         }
         int id = nextID.getAndIncrement();
         ChessGame game = new ChessGame();
@@ -44,16 +44,16 @@ public class MemoryGameDao implements GameDao {
     public GameData updateGamePlayer(int gameID, String playerColor, String username) throws DataAccessException {
         GameData game = games.get(gameID);
         if (game == null) {
-            throw new DataAccessException("Game not found");
+            throw new DataAccessException("Error: Game not found");
         }
 
         if (playerColor == null || (!playerColor.equalsIgnoreCase("WHITE") && !playerColor.equalsIgnoreCase("BLACK"))) {
-            throw new DataAccessException("Invalid color");
+            throw new DataAccessException("Error: Invalid color");
         }
 
         if (playerColor.equalsIgnoreCase("WHITE")) {
             if (game.whiteUsername() != null) {
-                throw new DataAccessException("White already taken");
+                throw new DataAccessException("Error: White already taken");
             }
 
             GameData updated = new GameData(game.gameID(), username, game.blackUsername(), game.gameName(), game.game());
@@ -62,7 +62,7 @@ public class MemoryGameDao implements GameDao {
 
         } else {
             if (game.blackUsername() != null) {
-                throw new DataAccessException("Black already taken");
+                throw new DataAccessException("Error: Black already taken");
             }
             GameData updated = new GameData(game.gameID(), game.whiteUsername(), username, game.gameName(), game.game());
             games.put(gameID, updated);
