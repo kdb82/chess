@@ -6,6 +6,7 @@ import exceptions.BadRequestException;
 import exceptions.UnauthorizedException;
 import model.AuthData;
 import model.UserData;
+import org.mindrot.jbcrypt.BCrypt;
 import requests.*;
 import results.*;
 
@@ -35,7 +36,7 @@ public class UserService {
             throw new AlreadyTakenException("Error: username is already taken");
         }
 
-        String hashedPw = PasswordUtil.hashPassword(request.password());
+        String hashedPw = BCrypt.hashpw(request.password(), BCrypt.gensalt());
         UserData userData = new UserData(username, hashedPw, request.email());
         userDao.createUser(userData);
 
@@ -55,10 +56,10 @@ public class UserService {
             throw new UnauthorizedException("Error: username or password is invalid");
         }
 
-        String hashedPw = PasswordUtil.hashPassword(request.password());
+        String hashedPw = BCrypt.hashpw(request.password(), BCrypt.gensalt());
 
         //verifyPassword
-        if (!hashedPw.equals(user.password())) {
+        if (!BCrypt.checkpw(user.password(), hashedPw)) {
             throw new UnauthorizedException("Error: password is incorrect");
         }
 
