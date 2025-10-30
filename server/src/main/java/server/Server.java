@@ -21,9 +21,22 @@ public class Server {
         });
 
         // Register your endpoints and exception handlers here.
-        UserDao userDao = new MemoryUserDao();
-        AuthDao authDao = new MemoryAuthDao();
-        GameDao gameDao = new MemoryGameDao();
+
+        DatabaseManager db = new DatabaseManager();
+        try {
+            DatabaseManager.createDatabase();
+            DatabaseManager.initializeSchema();
+        } catch (DataAccessException e) {
+            throw new RuntimeException(e.getMessage(), e);
+        }
+
+        UserDao userDao = new SqlUserDao(db);
+        AuthDao authDao = new SqlAuthDao(db);
+        GameDao gameDao = new SqlGameDao(db);
+
+//         UserDao userDao = new MemoryUserDao();
+//         AuthDao authDao = new MemoryAuthDao();
+//         GameDao gameDao = new MemoryGameDao();
 
         UserService userService = new UserService(userDao, authDao);
         UserHandler userHandler = new UserHandler(serializer, userService);
