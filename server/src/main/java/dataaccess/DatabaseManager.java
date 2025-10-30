@@ -52,6 +52,29 @@ public class DatabaseManager {
         }
     }
 
+    public void openConnection() throws DataAccessException {
+        try {
+            var conn = getConnection();
+            conn.setAutoCommit(false);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void closeConnection(Boolean commit) throws DataAccessException {
+        var conn = getConnection();
+        try  {
+            if (commit) {
+                conn.commit();
+            } else  {
+                conn.rollback();
+            }
+            conn.close();
+        } catch (SQLException e) {
+            throw new DataAccessException("failed to close connection", e);
+        }
+    }
+
     private static void loadPropertiesFromResources() {
         try (var propStream = Thread.currentThread().getContextClassLoader().getResourceAsStream("db.properties")) {
             if (propStream == null) {
@@ -105,6 +128,8 @@ public class DatabaseManager {
                 creator_id INT NOT NULL,
                 game_name VARCHAR(255) NULL,
                 turn_color ENUM('WHITE', 'BLACK') NOT NULL DEFAULT 'WHITE',
+                black_king_location VARCHAR(5) NOT NULL DEFAULT 'e1',
+                white_king_location VARCHAR(5) NOT NULL DEFAULT 'e8',
                 status ENUM('OPEN','IN_PROGRESS','FINISHED','ABANDONED') NOT NULL DEFAULT 'OPEN',
                 result ENUM('WHITE','BLACK','DRAW','UNDECIDED') NOT NULL DEFAULT 'UNDECIDED',
                 turn ENUM('WHITE','BLACK') NOT NULL DEFAULT 'WHITE',
