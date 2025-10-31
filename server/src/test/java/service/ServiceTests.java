@@ -239,8 +239,11 @@ public class ServiceTests {
         // clear
         assertDoesNotThrow(() -> clearService.clear());
 
-        // verify all wiped
-        assertNull(userDao.getUser("kate"));
+        if (userDao instanceof SqlUserDao) {
+            assertThrows(DataAccessException.class, () -> userDao.getUser("kate"));
+        } else {assertNull(userDao.getUser("kate"));}
+
+
         assertThrows(Exception.class, () -> authDao.getAuth(reg.authToken()));
         assertTrue(gameDao.listGames().isEmpty());
     }

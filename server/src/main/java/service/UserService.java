@@ -32,8 +32,16 @@ public class UserService {
             throw new BadRequestException("Error: username or password or email is blank");
         }
         var username = request.username();
-        if (userDao.getUser(username) != null) {
-            throw new AlreadyTakenException("Error: username is already taken");
+
+        try {
+            userDao.getUser(username);
+        } catch (DataAccessException ignored) {;
+        }
+
+        if (userDao instanceof MemoryUserDao) {
+            if (userDao.getUser(username) != null) {
+                throw new AlreadyTakenException("Username is already taken");
+            }
         }
 
         String hashedPw = BCrypt.hashpw(request.password(), BCrypt.gensalt());

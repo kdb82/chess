@@ -1,5 +1,6 @@
 package dataaccess;
 
+import exceptions.AlreadyTakenException;
 import model.UserData;
 
 import java.sql.SQLException;
@@ -33,7 +34,7 @@ public class SqlUserDao implements UserDao {
             stmt.setString(3, email);
             stmt.executeUpdate();
         } catch (SQLException e) {
-            throw new DataAccessException("username or password already exists", e);
+            throw new AlreadyTakenException("username or password already exists");
         }
     }
 
@@ -48,7 +49,7 @@ public class SqlUserDao implements UserDao {
 
             try (var rs = stmt.executeQuery()) {
                 if (!rs.next()) {
-                    return null;
+                    throw new DataAccessException("username not found");
                 }
 
                 return new UserData(
