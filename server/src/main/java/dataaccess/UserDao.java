@@ -8,7 +8,7 @@ public interface UserDao {
     /**
      * Deletes all User Data used for /db clear endpoint
      */
-    void clear();
+    void clear() throws DataAccessException;
 
     /**
      *
@@ -21,7 +21,7 @@ public interface UserDao {
      * @return UserData object if found
      * @throws AlreadyTakenException If username is already taken
      */
-    UserData getUser(String username) throws AlreadyTakenException;
+    UserData getUser(String username) throws AlreadyTakenException, DataAccessException;
 
 
 

@@ -41,14 +41,14 @@ public class DatabaseManager {
      * }
      * </code>
      */
-    static Connection getConnection() throws DataAccessException {
+    static Connection getConnection() throws SQLException {
         try {
             //do not wrap the following line with a try-with-resources
             var conn = DriverManager.getConnection(connectionUrl, dbUsername, dbPassword);
             conn.setCatalog(databaseName);
             return conn;
         } catch (SQLException ex) {
-            throw new DataAccessException("failed to get connection", ex);
+            throw new SQLException("failed to get connection", ex);
         }
     }
 
@@ -61,7 +61,7 @@ public class DatabaseManager {
         }
     }
 
-    public void closeConnection(Boolean commit) throws DataAccessException {
+    public void closeConnection(Boolean commit) throws SQLException {
         var conn = getConnection();
         try  {
             if (commit) {
@@ -71,7 +71,7 @@ public class DatabaseManager {
             }
             conn.close();
         } catch (SQLException e) {
-            throw new DataAccessException("failed to close connection", e);
+            throw new SQLException("failed to close connection", e);
         }
     }
 

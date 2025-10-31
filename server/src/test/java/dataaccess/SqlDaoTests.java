@@ -22,7 +22,7 @@ public class SqlDaoTests {
     private static UserDao userDao;
 
     @BeforeAll
-    public static void createDatabase() throws DataAccessException {
+    public static void createDatabase() throws DataAccessException, SQLException {
         db = new DatabaseManager();
         db.openConnection();
 
@@ -43,7 +43,7 @@ public class SqlDaoTests {
     }
 
     @AfterEach
-    public void tearDown() throws DataAccessException {
+    public void tearDown() throws SQLException {
         db.closeConnection(false);
     }
 
