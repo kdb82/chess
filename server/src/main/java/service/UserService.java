@@ -56,10 +56,10 @@ public class UserService {
             throw new UnauthorizedException("Error: username or password is invalid");
         }
 
-        String hashedPw = BCrypt.hashpw(request.password(), BCrypt.gensalt());
+
 
         //verifyPassword
-        if (!BCrypt.checkpw(user.password(), hashedPw)) {
+        if (!BCrypt.checkpw(request.password(), user.password())) {
             throw new UnauthorizedException("Error: password is incorrect");
         }
 

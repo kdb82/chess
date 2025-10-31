@@ -9,6 +9,7 @@ import results.*;
 
 import java.util.List;
 
+
 import static org.junit.jupiter.api.Assertions.*;
 
 @TestMethodOrder(MethodOrderer.DisplayName.class)
@@ -17,6 +18,7 @@ public class ServiceTests {
     private UserDao userDao;
     private AuthDao authDao;
     private GameDao gameDao;
+    private DatabaseManager databaseManager;
 
     private UserService userService;
     private GameService gameService;
@@ -24,13 +26,23 @@ public class ServiceTests {
 
     @BeforeEach
     void setup() {
-        userDao = new MemoryUserDao();
+        userDao = new SqlUserDao(databaseManager);
+//        userDao = new MemoryUserDao();
         authDao = new MemoryAuthDao();
         gameDao = new MemoryGameDao();
+
+
 
         userService = new UserService(userDao, authDao);
         gameService = new GameService(gameDao, authDao);
         clearService = new ClearService(userDao, authDao, gameDao);
+    }
+
+    @AfterEach
+    void tearDown() throws DataAccessException {
+        if (userDao instanceof SqlUserDao) {
+            userDao.clear();
+        }
     }
 
     // =========================

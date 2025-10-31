@@ -20,31 +20,34 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class SqlDaoTests {
     private static DatabaseManager db;
     private static UserDao userDao;
+    private Connection conn; // <-- not static; one per test
 
     @BeforeAll
-    public static void createDatabase() throws DataAccessException, SQLException {
+    public static void createDatabase() throws Exception {
         db = new DatabaseManager();
-        db.openConnection();
 
-        try {
+        // one-off setup connection
+        try (Connection setupConn = getConnection()) {
+            setupConn.setAutoCommit(false);
             DatabaseManager.createDatabase();
             DatabaseManager.initializeSchema();
-        } catch (DataAccessException e) {
-            throw new DataAccessException(e.getMessage());
+            db.closeConnection(setupConn, true);
         }
         userDao = new SqlUserDao(db);
-
-        db.closeConnection(true);
     }
 
     @BeforeEach
-    public void setup() throws DataAccessException {
-        db.openConnection();
+    public void setup() throws DataAccessException, SQLException {
+        conn = getConnection();
+        conn.setAutoCommit(false);// <-- capture the connection used this test
+
     }
 
     @AfterEach
-    public void tearDown() throws SQLException {
-        db.closeConnection(false);
+    public void tearDown() throws SQLException, DataAccessException {
+        db.closeConnection(conn, false);     // <-- close the SAME connection
+        conn = null;
+        userDao.clear();
     }
 
     @Test
@@ -54,14 +57,15 @@ public class SqlDaoTests {
         String plain = "StrongP@ssw0rd!";
         String hash = BCrypt.hashpw(plain, BCrypt.gensalt());
 
-        UserData user = new UserData(username, email, hash);
+        UserData user = new UserData(username, hash, email);
         userDao.createUser(user);
 
         UserData u = userDao.getUser(username);
         assertEquals(username, u.username(), "Username mismatch");
         assertEquals(email, u.email(), "Email mismatch");
 
-        // Ensure stored value looks like a BCrypt hash, not plaintext
-        assertTrue(BCrypt.checkpw(hash, u.password()), "Password hash should be a BCrypt hash");
+
+        assertTrue(BCrypt.checkpw(plain, u.password()), "Password hash should verify with plaintext");
+
     }
 }

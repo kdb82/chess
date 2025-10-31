@@ -48,7 +48,7 @@ public class SqlUserDao implements UserDao {
 
             try (var rs = stmt.executeQuery()) {
                 if (!rs.next()) {
-                    throw new DataAccessException("Error: username not found");
+                    return null;
                 }
 
                 return new UserData(
@@ -58,8 +58,8 @@ public class SqlUserDao implements UserDao {
                 );
             }
 
-        } catch (SQLException | DataAccessException e) {
-            throw new DataAccessException("Database error retrieving user", e);
+        } catch (SQLException e) {
+            throw new DataAccessException(e.getMessage(), e);
         }
     }
 

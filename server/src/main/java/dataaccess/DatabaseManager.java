@@ -52,17 +52,15 @@ public class DatabaseManager {
         }
     }
 
-    public void openConnection() throws DataAccessException {
-        try {
-            var conn = getConnection();
-            conn.setAutoCommit(false);
+    public Connection openConnection() throws DataAccessException {
+        try (var conn = getConnection()) {
+            return conn; // <-- IMPORTANT
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public void closeConnection(Boolean commit) throws SQLException {
-        var conn = getConnection();
+    public void closeConnection(Connection conn, Boolean commit) throws SQLException {
         try  {
             if (commit) {
                 conn.commit();
