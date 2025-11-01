@@ -15,7 +15,7 @@ public class SqlAuthDao implements AuthDao {
         try (var conn = getConnection(); var st = conn.createStatement()) {
             st.executeUpdate("DELETE FROM tokens");
         } catch (SQLException e) {
-            throw new DataAccessException("Error clearing tokens", e);
+            throw new DataAccessException("Error: Error clearing tokens", e);
         }
     }
 
@@ -26,7 +26,7 @@ public class SqlAuthDao implements AuthDao {
         try {
             userId = findUserIdByUsername(auth.username());
         } catch (SQLException e) {
-            throw new DataAccessException("Error resolving user by username", e);
+            throw new DataAccessException("Error: couldn't resolve user by username", e);
         }
 
         final String sql = "INSERT INTO tokens (token, user_id) VALUES (?, ?)";
@@ -37,7 +37,7 @@ public class SqlAuthDao implements AuthDao {
         } catch (SQLIntegrityConstraintViolationException dup) {
             throw new DataAccessException("Error: duplicate token or invalid user_id", dup);
         } catch (SQLException e) {
-            throw new DataAccessException("Error creating token", e);
+            throw new DataAccessException("Error: couldn't create token", e);
         }
             }
 
@@ -62,7 +62,7 @@ public class SqlAuthDao implements AuthDao {
             }
 
         } catch (SQLException e) {
-            throw new DataAccessException("Error reading auth token", e);
+            throw new DataAccessException("Error: couldn't read auth token", e);
         }
     }
 
@@ -76,17 +76,17 @@ public class SqlAuthDao implements AuthDao {
 
             stmt.setString(1, token);
             int rows = stmt.executeUpdate();
-            if (rows == 0) throw new DataAccessException("Token not found");
+            if (rows == 0) throw new DataAccessException("Error: Token not found");
 
         } catch (SQLException e) {
-            throw new RuntimeException("Error deleting auth token", e);
+            throw new DataAccessException("Error: couldn't delete auth token", e);
         } catch (DataAccessException e) {
             throw new DataAccessException(e.getMessage(), e);
         }
     }
 
 
-    private int findUserIdByUsername(String username) throws SQLException {
+    private int findUserIdByUsername(String username) throws SQLException, DataAccessException {
         final String query = "SELECT id FROM users WHERE username = ?";
         try (var conn = getConnection();
              var ps = conn.prepareStatement(query)) {
@@ -96,7 +96,7 @@ public class SqlAuthDao implements AuthDao {
                 if (rs.next()) {
                     return rs.getInt("id");
                 } else {
-                    throw new RuntimeException("User not found: " + username);
+                    throw new DataAccessException("Error: User not found: " + username);
                 }
             }
         }

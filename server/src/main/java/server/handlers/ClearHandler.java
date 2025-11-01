@@ -18,7 +18,7 @@ public class ClearHandler {
             clearService.clear();
             ctx.status(200).json(Map.of());
         } catch (DataAccessException e) {
-            throw new RuntimeException(e);
+            ctx.status(500).json(Map.of("message", e.getMessage()));
         }
 
     }

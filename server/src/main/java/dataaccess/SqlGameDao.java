@@ -18,7 +18,7 @@ public class SqlGameDao implements GameDao {
             stmnt.executeUpdate("DELETE FROM game_players");
             stmnt.executeUpdate("DELETE FROM games");
         } catch (SQLException e) {
-            throw new DataAccessException(e.getMessage(), e);
+            throw new DataAccessException("Error: " + e.getMessage(), e);
         }
     }
 
@@ -111,7 +111,7 @@ public class SqlGameDao implements GameDao {
     @Override
     public GameData updateGamePlayer(int gameID, String color, String username) throws DataAccessException {
         if (color == null || (!color.equalsIgnoreCase("WHITE") && !color.equalsIgnoreCase("BLACK"))) {
-            throw new DataAccessException("Invalid color (use WHITE or BLACK)");
+            throw new DataAccessException("Error: Invalid color (use WHITE or BLACK)");
         }
         String seat = color.toUpperCase();
 
@@ -179,7 +179,7 @@ public class SqlGameDao implements GameDao {
                 conn.setAutoCommit(true);
             }
         } catch (SQLException e) {
-            throw new DataAccessException("Error joining player to game", e);
+            throw new DataAccessException("Error: couldn't join player to game", e);
         }
 
         return getGame(gameID);
@@ -193,7 +193,7 @@ public class SqlGameDao implements GameDao {
                 return rs.next();
             }
         } catch (SQLException e) {
-            throw new DataAccessException("Error checking game existence", e);
+            throw new DataAccessException("Error: couldn't check game existence", e);
         }
     }
 
@@ -208,7 +208,7 @@ public class SqlGameDao implements GameDao {
                 if (rs.next()) {
                     return rs.getInt("id");
                 } else {
-                    throw new DataAccessException("User not found: " + username);
+                    throw new DataAccessException("Error: User not found: " + username);
                 }
             }
         }

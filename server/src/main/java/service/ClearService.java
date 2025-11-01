@@ -24,7 +24,6 @@ public class ClearService {
 
 
 
-
         return new ClearResult();
 
     }

@@ -17,7 +17,7 @@ public class SqlUserDao implements UserDao {
         try (var conn = getConnection(); var stmt = conn.createStatement()) {
             stmt.executeUpdate("DELETE FROM users");
         } catch (SQLException e) {
-            throw new DataAccessException("Database error clearing users", e);
+            throw new DataAccessException("Error: Database error clearing users", e);
         }
     }
 
@@ -34,7 +34,7 @@ public class SqlUserDao implements UserDao {
             stmt.setString(3, email);
             stmt.executeUpdate();
         } catch (SQLException e) {
-            throw new AlreadyTakenException("username or password already exists");
+            throw new AlreadyTakenException("Error: username or password already exists");
         }
     }
 
@@ -49,7 +49,7 @@ public class SqlUserDao implements UserDao {
 
             try (var rs = stmt.executeQuery()) {
                 if (!rs.next()) {
-                    throw new DataAccessException("username not found");
+                    throw new DataAccessException("Error: username not found");
                 }
 
                 return new UserData(
@@ -60,7 +60,7 @@ public class SqlUserDao implements UserDao {
             }
 
         } catch (SQLException e) {
-            throw new DataAccessException(e.getMessage(), e);
+            throw new DataAccessException("Error: " + e.getMessage(), e);
         }
     }
 
