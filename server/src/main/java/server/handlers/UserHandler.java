@@ -26,7 +26,7 @@ public class UserHandler{
     public void register(Context ctx) {
         try {
             String body = ctx.body();
-            if (body == null || body.isBlank()) {
+            if (body.isBlank()) {
                 ctx.status(400).json(Map.of("message", "Error: bad request"));
                 return;
             }
@@ -96,9 +96,9 @@ public class UserHandler{
 
         }
         catch(UnauthorizedException ex) {
-            ctx.status(401).json(Map.of("message", "user already exists"));
+            ctx.status(401).json(Map.of("message", "Error: user already exists"));
         } catch (DataAccessException e) {
-            ctx.status(401).json(Map.of("message", e.getMessage()));
+            ctx.status(500).json(Map.of("message", e.getMessage()));
         }
     }
 }

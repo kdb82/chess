@@ -33,14 +33,12 @@ public class UserService {
         }
         var username = request.username();
 
-        try {
-            userDao.getUser(username);
-        } catch (DataAccessException ignored) {;
-        }
+
+        userDao.getUser(username);
 
         if (userDao instanceof MemoryUserDao) {
             if (userDao.getUser(username) != null) {
-                throw new AlreadyTakenException("Username is already taken");
+                throw new AlreadyTakenException("Error: Username is already taken");
             }
         }
 
@@ -59,12 +57,10 @@ public class UserService {
         validateLoginData(request);
         var username = request.username();
 
-        UserData user = userDao.getUser(username);
+        var user = userDao.getUser(username);
         if (user == null) {
             throw new UnauthorizedException("Error: username or password is invalid");
         }
-
-
 
         //verifyPassword
         if (!BCrypt.checkpw(request.password(), user.password())) {

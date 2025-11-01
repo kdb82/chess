@@ -33,8 +33,11 @@ public class SqlUserDao implements UserDao {
             stmt.setString(2, password);
             stmt.setString(3, email);
             stmt.executeUpdate();
+        } catch (java.sql.SQLIntegrityConstraintViolationException dup) {
+            throw new AlreadyTakenException("Error: username already taken");
+
         } catch (SQLException e) {
-            throw new AlreadyTakenException("Error: username or password already exists");
+            throw new DataAccessException("Error: database failure", e);
         }
     }
 
@@ -49,7 +52,7 @@ public class SqlUserDao implements UserDao {
 
             try (var rs = stmt.executeQuery()) {
                 if (!rs.next()) {
-                    throw new DataAccessException("Error: username not found");
+                    return null;
                 }
 
                 return new UserData(

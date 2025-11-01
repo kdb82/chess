@@ -53,8 +53,8 @@ public class DatabaseManager {
     }
 
     public Connection openConnection() throws DataAccessException {
-        try (var conn = getConnection()) {
-            return conn; // <-- IMPORTANT
+        try {
+            return getConnection();
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -98,105 +98,105 @@ public class DatabaseManager {
 
     public static void initializeSchema() throws DataAccessException {
         final String users = """
-                CREATE TABLE IF NOT EXISTS users (
-                    id INT not null PRIMARY KEY AUTO_INCREMENT,
-                    username VARCHAR(50) NOT NULL UNIQUE,
-                    password VARCHAR(255) NOT NULL UNIQUE,
-                    email VARCHAR(255) NOT NULL UNIQUE
-                );
-                """;
+        CREATE TABLE IF NOT EXISTS users (
+            id INT NOT NULL PRIMARY KEY AUTO_INCREMENT,
+            username VARCHAR(50)  NOT NULL UNIQUE,
+            password VARCHAR(255) NOT NULL,
+            email    VARCHAR(255) NOT NULL UNIQUE
+        );
+    """;
 
-        final String tokens =
-            """
-            CREATE TABLE IF NOT EXISTS tokens (
-                 token varchar(255) NOT NULL,
-                 user_id INT NOT NULL,
-                 PRIMARY KEY (token),
-                 INDEX idx_tokens_user (user_id),
-                 CONSTRAINT fk_tokens
-                 FOREIGN KEY (user_id) REFERENCES users(id)
-                     ON DELETE CASCADE
-                     ON UPDATE RESTRICT
-                     );
-        """;
+        final String tokens = """
+        CREATE TABLE IF NOT EXISTS tokens (
+            token   VARCHAR(255) NOT NULL,
+            user_id INT NOT NULL,
+            PRIMARY KEY (token),
+            INDEX idx_tokens_user (user_id),
+            CONSTRAINT fk_tokens
+                FOREIGN KEY (user_id) REFERENCES users(id)
+                ON DELETE CASCADE ON UPDATE RESTRICT
+        );
+    """;
 
         final String games = """
-            CREATE TABLE IF NOT EXISTS games (
-                id INT NOT NULL PRIMARY KEY AUTO_INCREMENT,
-                creator_id INT NOT NULL,
-                game_name VARCHAR(255) NULL,
-                turn_color ENUM('WHITE', 'BLACK') NOT NULL DEFAULT 'WHITE',
-                black_king_location VARCHAR(5) NOT NULL DEFAULT 'e1',
-                white_king_location VARCHAR(5) NOT NULL DEFAULT 'e8',
-                status ENUM('OPEN','IN_PROGRESS','FINISHED','ABANDONED') NOT NULL DEFAULT 'OPEN',
-                result ENUM('WHITE','BLACK','DRAW','UNDECIDED') NOT NULL DEFAULT 'UNDECIDED',
-                CONSTRAINT fk_games
-                    FOREIGN KEY (creator_id) REFERENCES users(id)
-                    ON DELETE RESTRICT
-                    ON UPDATE RESTRICT
-            );
-        """;
+        CREATE TABLE IF NOT EXISTS games (
+            id INT NOT NULL PRIMARY KEY AUTO_INCREMENT,
+            creator_id INT NULL,
+            game_name VARCHAR(255) NULL,
+            turn_color ENUM('WHITE','BLACK') NOT NULL DEFAULT 'WHITE',
+            black_king_location VARCHAR(5) NOT NULL DEFAULT 'e8',
+            white_king_location VARCHAR(5) NOT NULL DEFAULT 'e1',
+            status ENUM('OPEN','IN_PROGRESS','FINISHED','ABANDONED') NOT NULL DEFAULT 'OPEN',
+            result ENUM('WHITE','BLACK','DRAW','UNDECIDED') NOT NULL DEFAULT 'UNDECIDED',
+            CONSTRAINT fk_games
+                FOREIGN KEY (creator_id) REFERENCES users(id)
+                ON DELETE RESTRICT ON UPDATE RESTRICT
+        );
+    """;
 
-        final String game_players = """
-                CREATE TABLE IF NOT EXISTS game_players (
-                    id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-                
-                    game_id INT NOT NULL,
-                    user_id INT NOT NULL,
-                    color ENUM('WHITE', 'BLACK') NOT NULL,
-                
-                    CONSTRAINT fk_gp_game
-                        FOREIGN KEY (game_id)
-                        REFERENCES games(id)
-                        ON DELETE CASCADE
-                        ON UPDATE RESTRICT,
-                
-                    CONSTRAINT fk_gp_user
-                        FOREIGN KEY (user_id)
-                        REFERENCES users(id)
-                        ON DELETE CASCADE
-                        ON UPDATE RESTRICT,
-                
-                    UNIQUE (game_id, color),
-                    UNIQUE (game_id, user_id)
-                );
-                
-                """;
+        final String gamePlayers = """
+        CREATE TABLE IF NOT EXISTS game_players (
+            id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+            game_id INT NOT NULL,
+            user_id INT NOT NULL,
+            color   ENUM('WHITE','BLACK') NOT NULL,
+            CONSTRAINT fk_gp_game FOREIGN KEY (game_id)
+                REFERENCES games(id) ON DELETE CASCADE ON UPDATE RESTRICT,
+            CONSTRAINT fk_gp_user FOREIGN KEY (user_id)
+                REFERENCES users(id) ON DELETE CASCADE ON UPDATE RESTRICT,
+            UNIQUE (game_id, color)
+        );
+    """;
 
-        final String game_moves = """
-                CREATE TABLE IF NOT EXISTS game_moves (
-                    id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-                    game_id INT NOT NULL,
-                    move_number INT NOT NULL,
-                    made_by ENUM('WHITE', 'BLACK') NOT NULL,
-                    from_sq VARCHAR(5) NOT NULL,
-                    to_sq VARCHAR(5) NOT NULL,
-                    promotion TINYINT NOT NULL DEFAULT 0,
-                    capture TINYINT NOT NULL DEFAULT 0,
-                    is_check TINYINT NOT NULL DEFAULT 0,
-                    checkmate TINYINT NOT NULL DEFAULT 0,
-                    CONSTRAINT fk_game_moves
-                        FOREIGN KEY (game_id) REFERENCES games(id)
-                        ON DELETE CASCADE
-                        ON UPDATE RESTRICT
-                    );
-        """;
+        final String gameMoves = """
+        CREATE TABLE IF NOT EXISTS game_moves (
+            id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+            game_id INT NOT NULL,
+            move_number INT NOT NULL,
+            made_by ENUM('WHITE','BLACK') NOT NULL,
+            from_sq VARCHAR(5) NOT NULL,
+            to_sq   VARCHAR(5) NOT NULL,
+            promotion TINYINT NOT NULL DEFAULT 0,
+            capture   TINYINT NOT NULL DEFAULT 0,
+            is_check  TINYINT NOT NULL DEFAULT 0,
+            checkmate TINYINT NOT NULL DEFAULT 0,
+            CONSTRAINT fk_game_moves FOREIGN KEY (game_id)
+                REFERENCES games(id) ON DELETE CASCADE ON UPDATE RESTRICT
+        );
+    """;
 
-        try (var connection = getConnection()) {
-            if (connection != null) {
-                var stmnt = connection.createStatement();
-                stmnt.executeUpdate(users);
-                stmnt.executeUpdate(tokens);
-                stmnt.executeUpdate(games);
-                stmnt.executeUpdate(game_players);
-                stmnt.executeUpdate(game_moves);
-            }
-            else  {
-                throw new SQLException("Couldn't connect to database");
-            }
-        }
-        catch (SQLException e) {
+        try (var conn = getConnection(); var st = conn.createStatement()) {
+            st.executeUpdate(users);
+            st.executeUpdate(tokens);
+            st.executeUpdate(games);
+            st.executeUpdate(gamePlayers);
+            st.executeUpdate(gameMoves);
+
+
+            execSilently(st, "DROP INDEX `password` ON `users`");
+            execSilently(st, "DROP INDEX `password_uniq` ON `users`");
+            execSilently(st, "DROP INDEX `uq_users_password` ON `users`");
+
+            execSilently(st, "ALTER TABLE `games` MODIFY `creator_id` INT NULL");
+            execSilently(st, "ALTER TABLE `games` MODIFY `black_king_location` VARCHAR(5) NOT NULL DEFAULT 'e8'");
+            execSilently(st, "ALTER TABLE `games` MODIFY `white_king_location` VARCHAR(5) NOT NULL DEFAULT 'e1'");
+
+            execSilently(st, "DROP INDEX `game_id_user_id` ON `game_players`");
+            execSilently(st, "DROP INDEX `uq_game_user` ON `game_players`");
+            execSilently(st, "DROP INDEX `game_id` ON `game_players`");     // some MySQL auto-names
+            execSilently(st, "DROP INDEX `game_id_2` ON `game_players`");
+
+            execSilently(st, "ALTER TABLE `game_players` ADD CONSTRAINT `uq_game_color` UNIQUE (`game_id`,`color`)");
+
+            execSilently(st, "CREATE INDEX `ix_gp_user` ON `game_players`(`user_id`)");
+
+        } catch (SQLException e) {
             throw new DataAccessException("Failed to initialize tables", e);
         }
+    }
+
+
+    private static void execSilently(Statement st, String sql) {
+        try { st.executeUpdate(sql); } catch (SQLException ignored) {}
     }
 }

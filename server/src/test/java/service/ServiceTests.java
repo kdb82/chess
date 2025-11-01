@@ -18,7 +18,6 @@ public class ServiceTests {
     private UserDao userDao;
     private AuthDao authDao;
     private GameDao gameDao;
-    private DatabaseManager databaseManager;
 
     private UserService userService;
     private GameService gameService;
@@ -248,12 +247,10 @@ public class ServiceTests {
 
         assertDoesNotThrow(() -> clearService.clear());
 
-        if (userDao instanceof SqlUserDao) {
-            assertThrows(DataAccessException.class, () -> userDao.getUser("kate"));
-        } else {assertNull(userDao.getUser("kate"));}
+        assertNull(userDao.getUser("kate"));
 
 
-        assertThrows(Exception.class, () -> authDao.getAuth(reg.authToken()));
+        assertNull(authDao.getAuth(reg.authToken()));
         assertTrue(gameDao.listGames().isEmpty());
     }
 

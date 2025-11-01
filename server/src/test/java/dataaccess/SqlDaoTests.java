@@ -8,7 +8,6 @@ import org.junit.jupiter.api.*;
 import org.mindrot.jbcrypt.BCrypt;
 
 import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.UUID;
@@ -108,10 +107,9 @@ public class SqlDaoTests {
 
     @Test
     @DisplayName("4) getUser: unknown username throws DataAccessException")
-    void getUser_notFound_throws() {
+    void getUser_notFound_throws() throws DataAccessException {
         String missing = "missing_" + UUID.randomUUID();
-        assertThrows(DataAccessException.class,
-                () -> userDao.getUser(missing),
+        assertNull(userDao.getUser(missing),
                 "Expected DataAccessException for unknown username");
     }
 
@@ -133,8 +131,8 @@ public class SqlDaoTests {
         userDao.clear();
 
 
-        assertThrows(DataAccessException.class, () -> userDao.getUser(u1));
-        assertThrows(DataAccessException.class, () -> userDao.getUser(u2));
+        assertNull(userDao.getUser(u1));
+        assertNull(userDao.getUser(u2));
     }
 
     @Test
@@ -200,16 +198,15 @@ public class SqlDaoTests {
 
         authDao.createAuth(new AuthData(token, username));
 
-        AuthData out = ((SqlAuthDao) authDao).getAuth(token);
+        AuthData out = authDao.getAuth(token);
         assertEquals(token, out.authToken());
         assertEquals(username, out.username());
     }
 
     @Test
-    void getAuth_missing_throws() {
+    void getAuth_missing_throws() throws DataAccessException {
         String missing = UUID.randomUUID().toString();
-        assertThrows(DataAccessException.class,
-                () -> ((SqlAuthDao) authDao).getAuth(missing),
+        assertNull(authDao.getAuth(missing),
                 "Expected DataAccessException for missing token");
     }
 
@@ -221,11 +218,11 @@ public class SqlDaoTests {
         String token = UUID.randomUUID().toString();
 
         authDao.createAuth(new AuthData(token, username));
-        assertEquals(username, ((SqlAuthDao) authDao).getAuth(token).username());
+        assertEquals(username, authDao.getAuth(token).username());
 
         authDao.deleteAuth(new AuthData(token, username));
 
-        assertThrows(DataAccessException.class, () -> ((SqlAuthDao) authDao).getAuth(token));
+        assertNull(authDao.getAuth(token));
     }
 
     @Test
@@ -250,8 +247,8 @@ public class SqlDaoTests {
 
         authDao.clear();
 
-        assertThrows(DataAccessException.class, () -> ((SqlAuthDao) authDao).getAuth(t1));
-        assertThrows(DataAccessException.class, () -> ((SqlAuthDao) authDao).getAuth(t2));
+        assertNull(authDao.getAuth(t1));
+        assertNull(authDao.getAuth(t2));
     }
 
 
@@ -285,7 +282,7 @@ public class SqlDaoTests {
         int id = gameDao.createGame("G1");
         assertNotEquals(0, id);
         gameDao.clear();
-        assertNull(((SqlGameDao) gameDao).getGame(id));
+        assertNull(gameDao.getGame(id));
     }
 
     @Test
@@ -302,7 +299,7 @@ public class SqlDaoTests {
         int id = gameDao.createGame(name);
         assertTrue(id > 0);
 
-        GameData g = ((SqlGameDao) gameDao).getGame(id);
+        GameData g = gameDao.getGame(id);
         assertNotNull(g);
         assertEquals(id, g.gameID());
         assertEquals(name, g.gameName());
@@ -317,7 +314,7 @@ public class SqlDaoTests {
 
     @Test
     void getGame_missing_returnsNull() throws DataAccessException {
-        assertNull(((SqlGameDao) gameDao).getGame(9_999_999));
+        assertNull(gameDao.getGame(9_999_999));
     }
 
     // ---------------- listGames ----------------

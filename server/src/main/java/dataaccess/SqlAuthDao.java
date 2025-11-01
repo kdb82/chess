@@ -15,7 +15,7 @@ public class SqlAuthDao implements AuthDao {
         try (var conn = getConnection(); var st = conn.createStatement()) {
             st.executeUpdate("DELETE FROM tokens");
         } catch (SQLException e) {
-            throw new DataAccessException("Error: Error clearing tokens", e);
+            throw new DataAccessException("Error: Database error clearing tokens", e);
         }
     }
 
@@ -28,6 +28,10 @@ public class SqlAuthDao implements AuthDao {
         } catch (SQLException e) {
             throw new DataAccessException("Error: couldn't resolve user by username", e);
         }
+        if (userId < 0) {
+            throw new DataAccessException("Error: user no longer exists");
+        }
+
 
         final String sql = "INSERT INTO tokens (token, user_id) VALUES (?, ?)";
         try (var conn = getConnection(); var ps = conn.prepareStatement(sql)) {
@@ -56,7 +60,7 @@ public class SqlAuthDao implements AuthDao {
 
             try (var rs = ps.executeQuery()) {
                 if (!rs.next()) {
-                    throw new DataAccessException("Error: token not found");
+                    return null;
                 }
                 return new AuthData(rs.getString("token"), rs.getString("username"));
             }
@@ -76,12 +80,12 @@ public class SqlAuthDao implements AuthDao {
 
             stmt.setString(1, token);
             int rows = stmt.executeUpdate();
-            if (rows == 0) throw new DataAccessException("Error: Token not found");
 
+            if (rows == 0) {
+                throw new DataAccessException("Error: token not found");
+            }
         } catch (SQLException e) {
             throw new DataAccessException("Error: couldn't delete auth token", e);
-        } catch (DataAccessException e) {
-            throw new DataAccessException(e.getMessage(), e);
         }
     }
 
@@ -96,7 +100,7 @@ public class SqlAuthDao implements AuthDao {
                 if (rs.next()) {
                     return rs.getInt("id");
                 } else {
-                    throw new DataAccessException("Error: User not found: " + username);
+                    return -1;
                 }
             }
         }
