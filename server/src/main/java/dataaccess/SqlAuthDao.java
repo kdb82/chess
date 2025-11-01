@@ -39,7 +39,7 @@ public class SqlAuthDao implements AuthDao {
         } catch (SQLException e) {
             throw new DataAccessException("Error creating token", e);
         }
-    }
+            }
 
     public AuthData getAuth(String token) throws DataAccessException {
         final String sql = """

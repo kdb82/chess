@@ -130,7 +130,6 @@ public class DatabaseManager {
                 white_king_location VARCHAR(5) NOT NULL DEFAULT 'e8',
                 status ENUM('OPEN','IN_PROGRESS','FINISHED','ABANDONED') NOT NULL DEFAULT 'OPEN',
                 result ENUM('WHITE','BLACK','DRAW','UNDECIDED') NOT NULL DEFAULT 'UNDECIDED',
-                turn ENUM('WHITE','BLACK') NOT NULL DEFAULT 'WHITE',
                 CONSTRAINT fk_games
                     FOREIGN KEY (creator_id) REFERENCES users(id)
                     ON DELETE RESTRICT
