@@ -26,9 +26,10 @@ public class ServiceTests {
 
     @BeforeEach
     void setup() {
-        userDao = new SqlUserDao(databaseManager);
+        userDao = new SqlUserDao();
 //        userDao = new MemoryUserDao();
-        authDao = new MemoryAuthDao();
+//        authDao = new MemoryAuthDao();
+        authDao = new SqlAuthDao();
         gameDao = new MemoryGameDao();
 
 

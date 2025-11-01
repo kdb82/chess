@@ -9,7 +9,7 @@ import static dataaccess.DatabaseManager.getConnection;
 
 public class SqlUserDao implements UserDao {
 
-    public SqlUserDao(DatabaseManager databaseManager) {
+    public SqlUserDao() {
     }
 
     @Override

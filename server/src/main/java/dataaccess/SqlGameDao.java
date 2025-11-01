@@ -5,11 +5,6 @@ import model.GameData;
 import java.util.List;
 
 public class SqlGameDao implements GameDao {
-    private final DatabaseManager databaseManager;
-
-    public SqlGameDao(DatabaseManager databaseManager) {
-        this.databaseManager = databaseManager;
-    }
 
     @Override
     public void clear() {

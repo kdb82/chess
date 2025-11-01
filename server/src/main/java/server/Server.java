@@ -30,9 +30,9 @@ public class Server {
             throw new RuntimeException(e.getMessage(), e);
         }
 
-        UserDao userDao = new SqlUserDao(db);
-        AuthDao authDao = new SqlAuthDao(db);
-        GameDao gameDao = new SqlGameDao(db);
+        UserDao userDao = new SqlUserDao();
+        AuthDao authDao = new SqlAuthDao();
+        GameDao gameDao = new SqlGameDao();
 
 //         UserDao userDao = new MemoryUserDao();
 //         AuthDao authDao = new MemoryAuthDao();

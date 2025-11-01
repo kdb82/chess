@@ -1,6 +1,7 @@
 package dataaccess;
 
 import exceptions.AlreadyTakenException;
+import model.AuthData;
 import model.UserData;
 import org.junit.jupiter.api.*;
 import org.mindrot.jbcrypt.BCrypt;
@@ -15,34 +16,37 @@ import static org.junit.jupiter.api.Assertions.*;
 public class SqlDaoTests {
     private static DatabaseManager db;
     private static UserDao userDao;
+    private static AuthDao authDao;
     private Connection conn; // <-- not static; one per test
 
     @BeforeAll
     public static void createDatabase() throws Exception {
         db = new DatabaseManager();
 
-        // one-off setup connection
+
         try (Connection setupConn = getConnection()) {
             setupConn.setAutoCommit(false);
             DatabaseManager.createDatabase();
             DatabaseManager.initializeSchema();
             db.closeConnection(setupConn, true);
         }
-        userDao = new SqlUserDao(db);
+        userDao = new SqlUserDao();
+        authDao = new SqlAuthDao();
     }
 
     @BeforeEach
     public void setup() throws DataAccessException, SQLException {
         conn = getConnection();
-        conn.setAutoCommit(false);// <-- capture the connection used this test
+        conn.setAutoCommit(false);
 
     }
 
     @AfterEach
     public void tearDown() throws SQLException, DataAccessException {
-        db.closeConnection(conn, false);     // <-- close the SAME connection
+        db.closeConnection(conn, false);
         conn = null;
         userDao.clear();
+        authDao.clear();
     }
 
     @Test
@@ -72,7 +76,7 @@ public class SqlDaoTests {
         String hash = BCrypt.hashpw("pw", BCrypt.gensalt());
 
         userDao.createUser(new UserData(username, hash, email1));
-        // Same username again should violate unique constraint → DataAccessException
+
         assertThrows(AlreadyTakenException.class,
                 () -> userDao.createUser(new UserData(username, hash, email2)),
                 "Expected AlreadyTakenException for duplicate username");
@@ -119,10 +123,10 @@ public class SqlDaoTests {
         userDao.createUser(new UserData(u1, hash, u1 + "@mail.com"));
         userDao.createUser(new UserData(u2, hash2, u2 + "@mail.com"));
 
-        // Act
+
         userDao.clear();
 
-        // Assert: both should now be gone
+
         assertThrows(DataAccessException.class, () -> userDao.getUser(u1));
         assertThrows(DataAccessException.class, () -> userDao.getUser(u2));
     }
@@ -130,13 +134,120 @@ public class SqlDaoTests {
     @Test
     @DisplayName("6) clear: idempotent (calling twice is safe)")
     void clear_idempotent() throws DataAccessException {
-        userDao.clear(); // first call on empty table
-        // second call should not throw
+        userDao.clear();
+
         assertDoesNotThrow(() -> userDao.clear());
-        // and you can still insert afterwards
+
         String username = "postclear_" + UUID.randomUUID();
         String hash = BCrypt.hashpw("pw", BCrypt.gensalt());
         userDao.createUser(new UserData(username, hash, username + "@mail.com"));
         assertEquals(username, userDao.getUser(username).username());
     }
+
+    @Test
+    void createAuthSuccess() throws DataAccessException {
+        String username = "u_" + UUID.randomUUID();
+        String email = username + "@mail.com";
+        String plain = "StrongP@ssw0rd!";
+        String hash = BCrypt.hashpw(plain, BCrypt.gensalt());
+
+        UserData user = new UserData(username, hash, email);
+        userDao.createUser(user);
+
+        String token = UUID.randomUUID().toString();
+        var authData = new AuthData(token, username);
+
+        authDao.createAuth(authData);
+
+        AuthData out = authDao.getAuth(token);
+
+        assertEquals(out.username(), authData.username(), "Username mismatch");
+        assertEquals(out.authToken(), authData.authToken(), "Auth token mismatch");
+
+    }
+    private String createUserReturnUsername() throws DataAccessException {
+        String username = "u_" + UUID.randomUUID();
+        String email = username + "@mail.com";
+        String hash = BCrypt.hashpw("pw", BCrypt.gensalt());
+        userDao.createUser(new UserData(username, hash, email));
+        return username;
+    }
+
+
+    @Test
+    void createAuth_duplicateToken_throws() throws DataAccessException {
+        String username = createUserReturnUsername();
+        String token = UUID.randomUUID().toString();
+
+        authDao.createAuth(new AuthData(token, username));
+        assertThrows(DataAccessException.class,
+                () -> authDao.createAuth(new AuthData(token, username)),
+                "Expected DataAccessException for duplicate token");
+    }
+
+    // --- getAuth ---
+
+    @Test
+    void getAuth_success() throws DataAccessException {
+        String username = createUserReturnUsername();
+        String token = UUID.randomUUID().toString();
+
+        authDao.createAuth(new AuthData(token, username));
+
+        AuthData out = ((SqlAuthDao) authDao).getAuth(token);
+        assertEquals(token, out.authToken());
+        assertEquals(username, out.username());
+    }
+
+    @Test
+    void getAuth_missing_throws() {
+        String missing = UUID.randomUUID().toString();
+        assertThrows(DataAccessException.class,
+                () -> ((SqlAuthDao) authDao).getAuth(missing),
+                "Expected DataAccessException for missing token");
+    }
+
+    // --- deleteAuth ---
+
+    @Test
+    void deleteAuth_success() throws DataAccessException {
+        String username = createUserReturnUsername();
+        String token = UUID.randomUUID().toString();
+
+        authDao.createAuth(new AuthData(token, username));
+        assertEquals(username, ((SqlAuthDao) authDao).getAuth(token).username());
+
+        authDao.deleteAuth(new AuthData(token, username));
+
+        assertThrows(DataAccessException.class, () -> ((SqlAuthDao) authDao).getAuth(token));
+    }
+
+    @Test
+    void deleteAuth_missing_throws() {
+        String missing = UUID.randomUUID().toString();
+        // username is irrelevant to deletion; DAO uses token
+        assertThrows(DataAccessException.class,
+                () -> authDao.deleteAuth(new AuthData(missing, "irrelevant")),
+                "Expected DataAccessException for missing token");
+    }
+
+    // --- clear ---
+
+    @Test
+    void clear_wipesAllTokens() throws DataAccessException {
+        String username = createUserReturnUsername();
+        String t1 = UUID.randomUUID().toString();
+        String t2 = UUID.randomUUID().toString();
+
+        authDao.createAuth(new AuthData(t1, username));
+        authDao.createAuth(new AuthData(t2, username));
+
+        authDao.clear();
+
+        assertThrows(DataAccessException.class, () -> ((SqlAuthDao) authDao).getAuth(t1));
+        assertThrows(DataAccessException.class, () -> ((SqlAuthDao) authDao).getAuth(t2));
+    }
 }
+
+
+

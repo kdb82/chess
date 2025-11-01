@@ -8,11 +8,7 @@ import java.sql.SQLIntegrityConstraintViolationException;
 import static dataaccess.DatabaseManager.getConnection;
 
 public class SqlAuthDao implements AuthDao {
-    private final DatabaseManager databaseManager;
 
-    public SqlAuthDao(DatabaseManager databaseManager) {
-        this.databaseManager = databaseManager;
-    }
 
     @Override
     public void clear() throws DataAccessException {
@@ -28,7 +24,7 @@ public class SqlAuthDao implements AuthDao {
         String token = auth.authToken();
         final int userId;
         try {
-            userId = findUserIdByUsername(auth.username()); // throws if not found
+            userId = findUserIdByUsername(auth.username());
         } catch (SQLException e) {
             throw new DataAccessException("Error resolving user by username", e);
         }
@@ -72,9 +68,23 @@ public class SqlAuthDao implements AuthDao {
 
 
     @Override
-    public void deleteAuth(AuthData authData) {
+    public void deleteAuth(AuthData authData) throws DataAccessException {
+        String token = authData.authToken();
+        final String sql = "DELETE FROM tokens WHERE token = ?";
+        try (var conn = getConnection();
+             var stmt = conn.prepareStatement(sql)) {
 
+            stmt.setString(1, token);
+            int rows = stmt.executeUpdate();
+            if (rows == 0) throw new DataAccessException("Token not found");
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Error deleting auth token", e);
+        } catch (DataAccessException e) {
+            throw new DataAccessException(e.getMessage(), e);
+        }
     }
+
 
     private int findUserIdByUsername(String username) throws SQLException {
         final String query = "SELECT id FROM users WHERE username = ?";
