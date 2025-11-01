@@ -15,8 +15,12 @@ public class SqlAuthDao implements AuthDao {
     }
 
     @Override
-    public void clear() {
-
+    public void clear() throws DataAccessException {
+        try (var conn = getConnection(); var st = conn.createStatement()) {
+            st.executeUpdate("DELETE FROM tokens");
+        } catch (SQLException e) {
+            throw new DataAccessException("Error clearing tokens", e);
+        }
     }
 
     @Override
@@ -28,7 +32,6 @@ public class SqlAuthDao implements AuthDao {
         } catch (SQLException e) {
             throw new DataAccessException("Error resolving user by username", e);
         }
-
 
         final String sql = "INSERT INTO tokens (token, user_id) VALUES (?, ?)";
         try (var conn = getConnection(); var ps = conn.prepareStatement(sql)) {
@@ -42,10 +45,31 @@ public class SqlAuthDao implements AuthDao {
         }
     }
 
-    @Override
     public AuthData getAuth(String token) throws DataAccessException {
-        return null;
+        final String sql = """
+        SELECT t.token, u.username
+        FROM tokens t
+        JOIN users u ON u.id = t.user_id
+        WHERE t.token = ?
+        LIMIT 1
+    """;
+        try (var con = getConnection();
+             var ps  = con.prepareStatement(sql)) {
+
+            ps.setString(1, token);
+
+            try (var rs = ps.executeQuery()) {
+                if (!rs.next()) {
+                    throw new DataAccessException("Error: token not found");
+                }
+                return new AuthData(rs.getString("token"), rs.getString("username"));
+            }
+
+        } catch (SQLException e) {
+            throw new DataAccessException("Error reading auth token", e);
+        }
     }
+
 
     @Override
     public void deleteAuth(AuthData authData) {
@@ -53,7 +77,7 @@ public class SqlAuthDao implements AuthDao {
     }
 
     private int findUserIdByUsername(String username) throws SQLException {
-        String query = "SELECT id FROM users WHERE username = ?";
+        final String query = "SELECT id FROM users WHERE username = ?";
         try (var conn = getConnection();
              var ps = conn.prepareStatement(query)) {
 
@@ -67,6 +91,7 @@ public class SqlAuthDao implements AuthDao {
             }
         }
     }
+
 
 
 }

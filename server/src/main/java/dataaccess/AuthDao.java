@@ -7,7 +7,7 @@ public interface AuthDao {
     /**
      * Removes all authorization data (used for the /db clear endpoint)
      */
-    void clear();
+    void clear() throws DataAccessException;
 
     /**
      * Creates a new authentication record for a logged-in or newly registered user
