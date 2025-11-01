@@ -26,11 +26,14 @@ public class ServiceTests {
 
     @BeforeEach
     void setup() {
-        userDao = new SqlUserDao();
+
 //        userDao = new MemoryUserDao();
 //        authDao = new MemoryAuthDao();
+//        gameDao = new MemoryGameDao();
+
+        userDao = new SqlUserDao();
         authDao = new SqlAuthDao();
-        gameDao = new MemoryGameDao();
+        gameDao = new SqlGameDao();
 
 
 
@@ -41,6 +44,12 @@ public class ServiceTests {
 
     @AfterEach
     void tearDown() throws DataAccessException {
+        if (authDao instanceof SqlAuthDao) {
+            authDao.clear();
+        }
+        if (gameDao instanceof SqlGameDao) {
+            gameDao.clear();
+        }
         if (userDao instanceof SqlUserDao) {
             userDao.clear();
         }
@@ -229,7 +238,6 @@ public class ServiceTests {
     @Test
     @DisplayName("14 Clear - Positive (Wipes users, auth, games)")
     void clear_success() throws Exception {
-        // seed data
         RegisterResult reg = userService.register(new RegisterRequest("kate", "pw", "kate@mail.com"));
         int id = gameService.createGame(new GameRequest("Z1"), reg.authToken()).gameID();
 
@@ -237,7 +245,7 @@ public class ServiceTests {
         assertNotNull(authDao.getAuth(reg.authToken()));
         assertNotNull(gameDao.getGame(id));
 
-        // clear
+
         assertDoesNotThrow(() -> clearService.clear());
 
         if (userDao instanceof SqlUserDao) {
@@ -253,7 +261,6 @@ public class ServiceTests {
     @DisplayName("15 Clear - Negative (Idempotent: clearing empty state)")
     void clear_whenEmpty_doesNotThrow() {
         assertDoesNotThrow(() -> clearService.clear());
-        // call again to prove idempotence
         assertDoesNotThrow(() -> clearService.clear());
     }
 }

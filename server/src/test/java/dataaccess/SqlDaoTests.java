@@ -2,12 +2,15 @@ package dataaccess;
 
 import exceptions.AlreadyTakenException;
 import model.AuthData;
+import model.GameData;
 import model.UserData;
 import org.junit.jupiter.api.*;
 import org.mindrot.jbcrypt.BCrypt;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.List;
 import java.util.UUID;
 
 import static dataaccess.DatabaseManager.getConnection;
@@ -17,6 +20,7 @@ public class SqlDaoTests {
     private static DatabaseManager db;
     private static UserDao userDao;
     private static AuthDao authDao;
+    private static GameDao gameDao;
     private Connection conn; // <-- not static; one per test
 
     @BeforeAll
@@ -32,6 +36,7 @@ public class SqlDaoTests {
         }
         userDao = new SqlUserDao();
         authDao = new SqlAuthDao();
+        gameDao = new SqlGameDao();
     }
 
     @BeforeEach
@@ -45,8 +50,9 @@ public class SqlDaoTests {
     public void tearDown() throws SQLException, DataAccessException {
         db.closeConnection(conn, false);
         conn = null;
-        userDao.clear();
         authDao.clear();
+        gameDao.clear();
+        userDao.clear();
     }
 
     @Test
@@ -247,6 +253,137 @@ public class SqlDaoTests {
         assertThrows(DataAccessException.class, () -> ((SqlAuthDao) authDao).getAuth(t1));
         assertThrows(DataAccessException.class, () -> ((SqlAuthDao) authDao).getAuth(t2));
     }
+
+
+    private int getUserIdByUsername(String username) throws Exception {
+        try (var ps = conn.prepareStatement("SELECT id FROM users WHERE username=?")) {
+            ps.setString(1, username);
+            try (var rs = ps.executeQuery()) {
+                assertTrue(rs.next(), "user should exist");
+                return rs.getInt(1);
+            }
+        }
+    }
+
+    private Integer getCreatorId(int gameId) throws Exception {
+        try (var conn = getConnection();
+             var ps = conn.prepareStatement("SELECT creator_id FROM games WHERE id=?")) {
+            ps.setInt(1, gameId);
+            try (var rs = ps.executeQuery()) {
+                assertTrue(rs.next(), "game should exist");
+                int v = rs.getInt(1);
+                return rs.wasNull() ? null : v;
+            }
+        }
+    }
+
+
+    // ---------------- clear ----------------
+
+    @Test
+    void clear_wipes() throws Exception {
+        int id = gameDao.createGame("G1");
+        assertNotEquals(0, id);
+        gameDao.clear();
+        assertNull(((SqlGameDao) gameDao).getGame(id));
+    }
+
+    @Test
+    void game_clear_idempotent() {
+        assertDoesNotThrow(() -> gameDao.clear());
+        assertDoesNotThrow(() -> gameDao.clear());
+    }
+
+    // ---------------- createGame ----------------
+
+    @Test
+    void createGame_success() throws Exception {
+        String name = "My Test Game";
+        int id = gameDao.createGame(name);
+        assertTrue(id > 0);
+
+        GameData g = ((SqlGameDao) gameDao).getGame(id);
+        assertNotNull(g);
+        assertEquals(id, g.gameID());
+        assertEquals(name, g.gameName());
+        assertNull(g.whiteUsername());
+        assertNull(g.blackUsername());
+
+        Integer creatorId = getCreatorId(id);
+        assertNull(creatorId, "creator_id should be NULL until someone joins");
+    }
+
+    // ---------------- getGame ----------------
+
+    @Test
+    void getGame_missing_returnsNull() throws DataAccessException {
+        assertNull(((SqlGameDao) gameDao).getGame(9_999_999));
+    }
+
+    // ---------------- listGames ----------------
+
+    @Test
+    void listGames_containsCreated() throws Exception {
+        int id = gameDao.createGame("Listed");
+        List<GameData> list = gameDao.listGames();
+        assertTrue(list.stream().anyMatch(g ->
+                g.gameID() == id && "Listed".equals(g.gameName())));
+    }
+
+    @Test
+    void listGames_empty() throws Exception {
+        gameDao.clear();
+        List<GameData> list = gameDao.listGames();
+        assertTrue(list.isEmpty());
+    }
+
+    // ---------------- updateGamePlayer ----------------
+
+    @Test
+    void updateGamePlayer_white_success_setsSeatAndCreator() throws Exception {
+        String user = createUserReturnUsername();
+        int userId = getUserIdByUsername(user);
+        int gameId = gameDao.createGame("Joinable");
+
+        GameData updated = gameDao.updateGamePlayer(gameId, "WHITE", user);
+        assertNotNull(updated);
+        assertEquals(user, updated.whiteUsername());
+        assertNull(updated.blackUsername());
+
+        Integer creatorId = getCreatorId(gameId);
+        assertNotNull(creatorId);
+        assertEquals(userId, creatorId.intValue());
+    }
+
+    @Test
+    void updateGamePlayer_invalidColor_throws() throws Exception {
+        String user = createUserReturnUsername();
+        int gameId = gameDao.createGame("BadColor");
+        assertThrows(DataAccessException.class,
+                () -> gameDao.updateGamePlayer(gameId, "GREEN", user));
+    }
+
+    @Test
+    void updateGamePlayer_missingGame_throws() throws Exception {
+        String user = createUserReturnUsername();
+        assertThrows(DataAccessException.class,
+                () -> gameDao.updateGamePlayer(42424242, "WHITE", user));
+    }
+
+    @Test
+    void updateGamePlayer_seatTaken_keepsOriginal() throws Exception {
+        String u1 = createUserReturnUsername();
+        String u2 = createUserReturnUsername();
+        int gameId = gameDao.createGame("SeatTest");
+
+        // First join fills WHITE
+        gameDao.updateGamePlayer(gameId, "WHITE", u1);
+
+        assertThrows(Exception.class,
+                () -> gameDao.updateGamePlayer(gameId, "WHITE", u2));
+
+    }
+
 }
 
 

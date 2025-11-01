@@ -14,8 +14,12 @@ public class ClearHandler {
     }
 
     public void clear(Context ctx) throws DataAccessException {
-        clearService.clear();
-        ctx.status(200).json(Map.of());
+        try {
+            clearService.clear();
+            ctx.status(200).json(Map.of());
+        } catch (DataAccessException e) {
+            throw new RuntimeException(e);
+        }
 
     }
 

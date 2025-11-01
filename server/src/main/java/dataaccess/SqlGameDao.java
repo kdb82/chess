@@ -12,13 +12,13 @@ import static dataaccess.DatabaseManager.getConnection;
 public class SqlGameDao implements GameDao {
 
     @Override
-    public void clear() {
+    public void clear() throws DataAccessException {
         try (var conn = getConnection(); var stmnt = conn.createStatement()) {
-            stmnt.executeUpdate("DELETE FROM games");
-            stmnt.executeUpdate("DELETE FROM game_players");
             stmnt.executeUpdate("DELETE FROM game_moves");
+            stmnt.executeUpdate("DELETE FROM game_players");
+            stmnt.executeUpdate("DELETE FROM games");
         } catch (SQLException e) {
-            throw new RuntimeException(e);
+            throw new DataAccessException(e.getMessage(), e);
         }
     }
 
@@ -26,24 +26,28 @@ public class SqlGameDao implements GameDao {
     public int createGame(String gameName) throws DataAccessException {
         final String insertGame = """
                 INSERT INTO games (creator_id, game_name, turn_color, black_king_location, white_king_location, status, result)
-                VALUES (NULL, ?, 'WHITE',' e8', 'e1', 'OPEN', 'UNDECIDED')
+                VALUES (NULL, ?, 'WHITE', 'e8', 'e1', 'OPEN', 'UNDECIDED')
                 """;
         try (var conn = getConnection(); var stmt = conn.prepareStatement(insertGame, Statement.RETURN_GENERATED_KEYS)) {
+
             stmt.setString(1, gameName);
             stmt.executeUpdate();
-            if (stmt.getGeneratedKeys().next()) {
-                return stmt.getGeneratedKeys().getInt(1);
-            } else {
-                throw new DataAccessException("Error: Couldn't Create Game");
+
+            try (var rs = stmt.getGeneratedKeys()) {
+                if (rs.next()) {
+                    return rs.getInt(1);
+                } else {
+                    throw new DataAccessException("Error: Couldn't create game (no ID returned)");
+                }
             }
         } catch (SQLException e) {
-            throw new RuntimeException(e);
+            throw new DataAccessException(e.getMessage(), e);
         }
 
     }
 
     @Override
-    public GameData getGame(int gameID) {
+    public GameData getGame(int gameID) throws DataAccessException {
         final String query = """
                 SELECT g.id AS gameId, game_name, u.username AS white_username, u2.username AS black_username FROM games g
                 LEFT JOIN game_players gp ON g.id = gp.game_id AND gp.color = 'WHITE'
@@ -69,7 +73,7 @@ public class SqlGameDao implements GameDao {
                 } else return null;
             }
         } catch (SQLException e) {
-            throw new RuntimeException("Error: couldn't get game",e);
+            throw new DataAccessException("Error: couldn't get game",e);
         }
     }
 
@@ -106,45 +110,74 @@ public class SqlGameDao implements GameDao {
 
     @Override
     public GameData updateGamePlayer(int gameID, String color, String username) throws DataAccessException {
-        if (color == null ||
-                (!color.equalsIgnoreCase("WHITE") && !color.equalsIgnoreCase("BLACK"))) {
+        if (color == null || (!color.equalsIgnoreCase("WHITE") && !color.equalsIgnoreCase("BLACK"))) {
             throw new DataAccessException("Invalid color (use WHITE or BLACK)");
         }
-        String colorToUpdate = color.toUpperCase();
+        String seat = color.toUpperCase();
 
-        if (!gameExists(gameID)) throw new DataAccessException("Error: game not found");
+        if (!gameExists(gameID)) {
+            throw new DataAccessException("Error: game not found");
+        }
 
-        final int userId;
+        int userId;
         try {
             userId = findUserIdByUsername(username);
         } catch (SQLException e) {
-            throw new RuntimeException(e);
+            throw new DataAccessException("Error finding user", e);
         }
+
+        final String checkSeat = """
+            SELECT u.username
+            FROM game_players gp
+            LEFT JOIN users u ON u.id = gp.user_id
+            WHERE gp.game_id = ? AND gp.color = ?
+            """;
 
         final String insertSeat = """
             INSERT INTO game_players (game_id, user_id, color)
             VALUES (?, ?, ?)
-            ON DUPLICATE KEY UPDATE user_id = IF(user_id IS NULL, VALUES(user_id), user_id)
-        """;
+            ON DUPLICATE KEY UPDATE user_id = VALUES(user_id)
+            """;
 
         try (var conn = getConnection()) {
             conn.setAutoCommit(false);
-            try (var ps = conn.prepareStatement(insertSeat)) {
-                ps.setInt(1, gameID);
-                ps.setInt(2, userId);
-                ps.setString(3, colorToUpdate);
-                ps.executeUpdate();
+            try {
+                String occupant = null;
+                try (var ps = conn.prepareStatement(checkSeat)) {
+                    ps.setInt(1, gameID);
+                    ps.setString(2, seat);
+                    try (var rs = ps.executeQuery()) {
+                        if (rs.next()) {
+                            occupant = rs.getString("username");
+                        }
+                    }
+                }
+
+                if (occupant != null && !occupant.isEmpty()) {
+                    throw new DataAccessException("Error: " + seat + " seat already taken by " + occupant);
+                }
+
+                try (var ps = conn.prepareStatement(insertSeat)) {
+                    ps.setInt(1, gameID);
+                    ps.setInt(2, userId);
+                    ps.setString(3, seat);
+                    ps.executeUpdate();
+                }
+
+                try (var ps = conn.prepareStatement(
+                        "UPDATE games SET creator_id = ? WHERE id = ? AND creator_id IS NULL")) {
+                    ps.setInt(1, userId);
+                    ps.setInt(2, gameID);
+                    ps.executeUpdate();
+                }
+
+                conn.commit();
+            } catch (Exception e) {
+                conn.rollback();
+                throw new DataAccessException(e.getMessage(), e);
+            } finally {
+                conn.setAutoCommit(true);
             }
-
-
-            try (var creatorStmt = conn.prepareStatement(
-                    "UPDATE games SET creator_id = ? WHERE id = ? AND creator_id IS NULL")) {
-                creatorStmt.setInt(1, userId);
-                creatorStmt.setInt(2, gameID);
-                creatorStmt.executeUpdate();
-            }
-
-            conn.commit();
         } catch (SQLException e) {
             throw new DataAccessException("Error joining player to game", e);
         }
@@ -165,7 +198,7 @@ public class SqlGameDao implements GameDao {
     }
 
 
-    private int findUserIdByUsername(String username) throws SQLException {
+    private int findUserIdByUsername(String username) throws SQLException, DataAccessException {
         final String query = "SELECT id FROM users WHERE username = ?";
         try (var conn = getConnection();
              var ps = conn.prepareStatement(query)) {
@@ -175,7 +208,7 @@ public class SqlGameDao implements GameDao {
                 if (rs.next()) {
                     return rs.getInt("id");
                 } else {
-                    throw new RuntimeException("User not found: " + username);
+                    throw new DataAccessException("User not found: " + username);
                 }
             }
         }
