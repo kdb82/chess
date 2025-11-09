@@ -1,5 +1,6 @@
 package dataaccess;
 
+import chess.ChessGame;
 import model.GameData;
 
 import java.sql.SQLException;
@@ -10,6 +11,7 @@ import java.util.List;
 import static dataaccess.DatabaseManager.getConnection;
 
 public class SqlGameDao implements GameDao {
+    private static final com.google.gson.Gson GSON = new com.google.gson.Gson();
 
     @Override
     public void clear() throws DataAccessException {
@@ -25,12 +27,15 @@ public class SqlGameDao implements GameDao {
     @Override
     public int createGame(String gameName) throws DataAccessException {
         final String insertGame = """
-                INSERT INTO games (creator_id, game_name, turn_color, black_king_location, white_king_location, status, result)
-                VALUES (NULL, ?, 'WHITE', 'e8', 'e1', 'OPEN', 'UNDECIDED')
+                INSERT INTO games (creator_id, game_name, turn_color, black_king_location, white_king_location, status, result, state_json)
+                VALUES (NULL, ?, 'WHITE', 'e8', 'e1', 'OPEN', 'UNDECIDED', ?)
                 """;
         try (var conn = getConnection(); var stmt = conn.prepareStatement(insertGame, Statement.RETURN_GENERATED_KEYS)) {
+            var initial_game = new ChessGame();
+            var json = GSON.toJson(serialization.GameStateMapper.gameToDTO(initial_game));
 
             stmt.setString(1, gameName);
+            stmt.setString(2, json);
             stmt.executeUpdate();
 
             try (var rs = stmt.getGeneratedKeys()) {
@@ -61,12 +66,13 @@ public class SqlGameDao implements GameDao {
             stmt.setInt(1, gameID);
             try (var rs = stmt.executeQuery()) {
                 if (rs.next()) {
+                    var game = loadGameState(gameID);
                     GameData out = new GameData(
                             rs.getInt("gameId"),
                             rs.getString("white_username"),
                             rs.getString("black_username"),
                             rs.getString("game_name"),
-                            null
+                            game
                     );
                     return out;
 
@@ -213,5 +219,36 @@ public class SqlGameDao implements GameDao {
             }
         }
     }
+
+    //saves a json string representing game to database given a game object
+    public void saveGameState(int gameId, chess.ChessGame game) throws DataAccessException {
+        var json = GSON.toJson(serialization.GameStateMapper.gameToDTO(game));
+        final String sql = "UPDATE games SET state_json = ? WHERE id = ?";
+        try (var conn = getConnection(); var ps = conn.prepareStatement(sql)) {
+            ps.setString(1, json);
+            ps.setInt(2, gameId);
+            if (ps.executeUpdate() == 0) throw new DataAccessException("Error: game not found");
+        } catch (java.sql.SQLException e) {
+            throw new DataAccessException("Error: couldn't save game state", e);
+        }
+    }
+
+    //returns game loaded from database information
+    public chess.ChessGame loadGameState(int gameId) throws DataAccessException {
+        final String sql = "SELECT state_json FROM games WHERE id = ?";
+        try (var conn = getConnection(); var ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, gameId);
+            try (var rs = ps.executeQuery()) {
+                if (!rs.next()) throw new DataAccessException("Error: game not found");
+                var json = rs.getString(1);
+                if (json == null || json.isBlank()) return new chess.ChessGame();
+                var dto = GSON.fromJson(json, serialization.GameStateDTO.class);
+                return serialization.GameStateMapper.dtoToGame(dto);
+            }
+        } catch (java.sql.SQLException e) {
+            throw new DataAccessException("Error loading game state", e);
+        }
+    }
+
 
 }
