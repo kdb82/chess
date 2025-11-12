@@ -1,4 +1,4 @@
-package server;
+package client;
 
 import com.google.gson.Gson;
 import exception.ResponseException;
@@ -34,7 +34,7 @@ public class ServerFacade {
     public LogoutResult logout(LogoutRequest logoutRequest) throws ResponseException {
         assert(logoutRequest != null);
         var token = logoutRequest.authToken();
-        var request = buildRequest("POST", "/session", null, token);
+        var request = buildRequest("DELETE", "/session", null, token);
         var response = sendRequest(request);
         return handleResponse(response,  LogoutResult.class);
     }
@@ -56,7 +56,7 @@ public class ServerFacade {
     public ListGamesResult listGames(ListGameRequest listGameRequest) throws ResponseException {
         assert(listGameRequest != null);
         var token = listGameRequest.authToken();
-        var request = buildRequest("GET", "/game", listGameRequest, token);
+        var request = buildRequest("GET", "/game", null, token);
         var response = sendRequest(request);
         return handleResponse(response,  ListGamesResult.class);
     }
