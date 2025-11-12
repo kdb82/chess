@@ -142,8 +142,8 @@ public class ServiceTests {
         RegisterResult reg = userService.register(new RegisterRequest("fran", "pw", "fran@mail.com"));
 
         // Create a couple of games (authorized)
-        gameService.createGame(new GameRequest("G1"), reg.authToken());
-        gameService.createGame(new GameRequest("G2"), reg.authToken());
+        gameService.createGame(new CreateGameRequest("G1"), reg.authToken());
+        gameService.createGame(new CreateGameRequest("G2"), reg.authToken());
 
         ListGameRequest request = new ListGameRequest(reg.authToken());
         ListGamesResult out = gameService.listGames(request);
@@ -171,7 +171,7 @@ public class ServiceTests {
     @DisplayName("09 CreateGame - Positive")
     void createGame_success() throws Exception {
         RegisterResult reg = userService.register(new RegisterRequest("gina", "pw", "gina@mail.com"));
-        CreateGameResult created = gameService.createGame(new GameRequest("My Match"), reg.authToken());
+        CreateGameResult created = gameService.createGame(new CreateGameRequest("My Match"), reg.authToken());
 
         assertTrue(created.gameID() > 0);
         GameData stored = gameDao.getGame(created.gameID());
@@ -183,7 +183,7 @@ public class ServiceTests {
     @DisplayName("10 CreateGame - Negative (Unauthorized)")
     void createGame_unauthorized() {
         assertThrows(Exception.class, () ->
-                gameService.createGame(new GameRequest("X"), "invalid-token"));
+                gameService.createGame(new CreateGameRequest("X"), "invalid-token"));
     }
 
     // =========================
@@ -194,7 +194,7 @@ public class ServiceTests {
     @DisplayName("11 JoinGame - Positive (Claim WHITE)")
     void joinGame_success_white() throws Exception {
         RegisterResult reg = userService.register(new RegisterRequest("hank", "pw", "hank@mail.com"));
-        int id = gameService.createGame(new GameRequest("Room"), reg.authToken()).gameID();
+        int id = gameService.createGame(new CreateGameRequest("Room"), reg.authToken()).gameID();
 
         assertDoesNotThrow(() ->
                 gameService.joinGame(new JoinGameRequest(id, "WHITE"), reg.authToken()));
@@ -209,7 +209,7 @@ public class ServiceTests {
     void joinGame_alreadyTaken() throws Exception {
         // alice claims WHITE
         RegisterResult alice = userService.register(new RegisterRequest("alice2", "pw", "a2@mail.com"));
-        int id = gameService.createGame(new GameRequest("Room2"), alice.authToken()).gameID();
+        int id = gameService.createGame(new CreateGameRequest("Room2"), alice.authToken()).gameID();
         gameService.joinGame(new JoinGameRequest(id, "WHITE"), alice.authToken());
 
         // bob tries to claim WHITE
@@ -224,7 +224,7 @@ public class ServiceTests {
     @DisplayName("13 JoinGame - Negative (Bad Request: invalid color)")
     void joinGame_badRequest_invalidColor() throws Exception {
         RegisterResult reg = userService.register(new RegisterRequest("ivy", "pw", "ivy@mail.com"));
-        int id = gameService.createGame(new GameRequest("Room3"), reg.authToken()).gameID();
+        int id = gameService.createGame(new CreateGameRequest("Room3"), reg.authToken()).gameID();
 
         assertThrows(BadRequestException.class, () ->
                 gameService.joinGame(new JoinGameRequest(id, "BLUE"), reg.authToken()));
@@ -238,7 +238,7 @@ public class ServiceTests {
     @DisplayName("14 Clear - Positive (Wipes users, auth, games)")
     void clear_success() throws Exception {
         RegisterResult reg = userService.register(new RegisterRequest("kate", "pw", "kate@mail.com"));
-        int id = gameService.createGame(new GameRequest("Z1"), reg.authToken()).gameID();
+        int id = gameService.createGame(new CreateGameRequest("Z1"), reg.authToken()).gameID();
 
         assertNotNull(userDao.getUser("kate"));
         assertNotNull(authDao.getAuth(reg.authToken()));

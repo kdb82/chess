@@ -8,7 +8,7 @@ import exceptions.BadRequestException;
 import exceptions.UnauthorizedException;
 import model.AuthData;
 import model.GameData;
-import requests.GameRequest;
+import requests.CreateGameRequest;
 import requests.JoinGameRequest;
 import requests.ListGameRequest;
 import results.CreateGameResult;
@@ -64,7 +64,7 @@ public class GameService {
 
     }
 
-    public CreateGameResult createGame(GameRequest request, String authToken) throws DataAccessException, UnauthorizedException, BadRequestException {
+    public CreateGameResult createGame(CreateGameRequest request, String authToken) throws DataAccessException, UnauthorizedException, BadRequestException {
         AuthData authData = authDao.getAuth(authToken);
         if (authData == null) {
             throw new UnauthorizedException("Error: Unauthorized");

@@ -67,6 +67,14 @@ public class ChessGame {
         BLACK
     }
 
+    public void setBlackKing(ChessPiece king) {
+        this.blackKing = king;
+    }
+
+    public void setWhiteKing(ChessPiece king) {
+        this.whiteKing = king;
+    }
+
     private static class MoveSnapshot {
         ChessPosition start, end;
         ChessPiece targetBeforeMove;

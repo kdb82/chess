@@ -1,5 +1,6 @@
 package dataaccess;
 
+import chess.ChessGame;
 import model.GameData;
 import java.util.List;
 
@@ -13,4 +14,12 @@ public interface GameDao {
     List<GameData> listGames() throws DataAccessException;
 
     GameData updateGamePlayer(int gameID, String color, String username) throws DataAccessException;
+
+    default void saveGameState(int gameId, ChessGame game) throws DataAccessException {
+
+    }
+
+    default ChessGame loadGameState(int gameId) throws DataAccessException {
+        return new ChessGame();
+    }
 }

@@ -6,11 +6,9 @@ import exceptions.UnauthorizedException;
 import com.google.gson.Gson;
 import dataaccess.DataAccessException;
 import io.javalin.http.Context;
-import requests.LoginRequest;
-import requests.LogoutRequest;
-import requests.RegisterRequest;
-import results.*;
+import requests.*;
 import service.UserService;
+import results.*;
 
 import java.util.Map;
 

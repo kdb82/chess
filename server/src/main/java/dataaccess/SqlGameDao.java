@@ -221,6 +221,7 @@ public class SqlGameDao implements GameDao {
     }
 
     //saves a json string representing game to database given a game object
+    @Override
     public void saveGameState(int gameId, chess.ChessGame game) throws DataAccessException {
         var json = GSON.toJson(serialization.GameStateMapper.gameToDTO(game));
         final String sql = "UPDATE games SET state_json = ? WHERE id = ?";
@@ -234,6 +235,7 @@ public class SqlGameDao implements GameDao {
     }
 
     //returns game loaded from database information
+    @Override
     public chess.ChessGame loadGameState(int gameId) throws DataAccessException {
         final String sql = "SELECT state_json FROM games WHERE id = ?";
         try (var conn = getConnection(); var ps = conn.prepareStatement(sql)) {

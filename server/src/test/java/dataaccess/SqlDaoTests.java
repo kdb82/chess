@@ -1,5 +1,9 @@
 package dataaccess;
 
+import chess.BoardPrinter;
+import chess.ChessGame;
+import chess.ChessMove;
+import chess.ChessPosition;
 import exceptions.AlreadyTakenException;
 import model.AuthData;
 import model.GameData;
@@ -380,6 +384,43 @@ public class SqlDaoTests {
                 () -> gameDao.updateGamePlayer(gameId, "WHITE", u2));
 
     }
+
+    @Test
+    void testGameState() throws Exception {
+        String user = createUserReturnUsername();
+        int gameId = gameDao.createGame("GameTest");
+        var gameData = gameDao.getGame(gameId);
+        var game = gameData.game();
+        var gameBoard = game.getBoard();
+        String boardString = BoardPrinter.boardString(gameBoard);
+
+        var testBoard = new ChessGame().getBoard();
+        String testBoardString = BoardPrinter.boardString(testBoard);
+
+        assertEquals(boardString, testBoardString);
+    }
+
+    @Test
+    void testSaveAndLoadGameState() throws Exception {
+        int gameId = gameDao.createGame("StateTest");
+
+        // Load game, make a move
+        var game1 = gameDao.getGame(gameId).game();
+        var move = new ChessMove(new ChessPosition(2, 1), new ChessPosition(3, 1), null);
+        game1.makeMove(move);
+
+        // Save the updated state
+        gameDao.saveGameState(gameId, game1);
+
+        // Load it again
+        var game2 = gameDao.loadGameState(gameId);
+
+        // Their board strings should match
+        assertEquals(BoardPrinter.boardString(game1.getBoard()),
+                BoardPrinter.boardString(game2.getBoard()));
+        assertEquals(game1.getTeamTurn(), game2.getTeamTurn());
+    }
+
 
 }
 

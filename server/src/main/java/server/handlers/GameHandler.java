@@ -6,7 +6,7 @@ import exceptions.AlreadyTakenException;
 import exceptions.BadRequestException;
 import exceptions.UnauthorizedException;
 import io.javalin.http.Context;
-import requests.GameRequest;
+import requests.CreateGameRequest;
 import requests.JoinGameRequest;
 import requests.ListGameRequest;
 import results.CreateGameResult;
@@ -91,7 +91,7 @@ public class GameHandler{
                 return;
             }
 
-            GameRequest request = serializer.fromJson(ctx.body(), GameRequest.class);
+            CreateGameRequest request = serializer.fromJson(ctx.body(), CreateGameRequest.class);
             CreateGameResult result = gameService.createGame(request, token);
             ctx.status(200).json(result);
 
