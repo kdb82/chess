@@ -26,31 +26,32 @@ public class ChessClient extends Endpoint {
     public void quit() {
     }
 
-    public void login(String[] params) throws ResponseException {
-        if (params.length >= 1) {
-            ws.enterPetShop(visitorName);
-            return String.format("You signed in as %s.", visitorName);
-        }
-        throw new ResponseException(ResponseException.Code.ClientError, "Expected: <yourname>");
+    public String login(String[] params) throws ResponseException {
+
+        return null;
     }
 
-}
-
-    public void register(String[] params) {
+    public String register(String[] params) {
+        return null;
     }
 
-    public void createGame(String[] params) {
+    public String createGame(String[] params) {
+        return null;
     }
 
-    public void observeGame(String[] params) {
+    public String observeGame(String[] params) {
+        return null;
     }
 
-    public void joinGame(String[] params) {
+    public String joinGame(String[] params) {
+        return null;
     }
 
-    public void logout() {
+    public String logout() {
+        return null;
     }
 
-    public void listGames() {
+    public String listGames() {
+        return null;
     }
 }
