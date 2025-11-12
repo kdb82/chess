@@ -1,4 +1,5 @@
 import ui.ChessClient;
+import ui.Repl;
 
 public class Main {
     public static void main(String[] args) {
@@ -9,6 +10,10 @@ public class Main {
         String serverURL = "http://localhost:" + port;
         System.out.println("♕ 240 Chess Client: " + port);
 
-        new ChessClient(serverURL).run();
+        try {
+            new Repl(serverURL).run();
+        } catch (Exception e) {
+
+        }
     }
 }

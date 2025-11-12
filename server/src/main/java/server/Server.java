@@ -8,6 +8,7 @@ import server.handlers.*;
 import service.ClearService;
 import service.GameService;
 import service.UserService;
+import server.websocket.WebSocketHandler;
 
 public class Server {
 
@@ -15,9 +16,11 @@ public class Server {
 
     public Server() {
         Gson serializer = new Gson();
+        WebSocketHandler webSocketHandler = new WebSocketHandler();
+
         app = Javalin.create(config -> {
             config.staticFiles.add("web");
-            config.jsonMapper(new JavalinGson());   // <-- wire Gson
+            config.jsonMapper(new JavalinGson());
         });
 
         // Register your endpoints and exception handlers here.
@@ -47,7 +50,7 @@ public class Server {
         ClearService clearService = new ClearService(userDao, authDao, gameDao);
         ClearHandler clearHandler = new ClearHandler(clearService);
 
-        registerEndpoints(userHandler, gameHandler, clearHandler);
+        registerEndpoints(userHandler, gameHandler, clearHandler, webSocketHandler);
 
     }
 
@@ -60,7 +63,7 @@ public class Server {
         app.stop();
     }
 
-    private void registerEndpoints(UserHandler userHandler, GameHandler gameHandler, ClearHandler clearHandler) {
+    private void registerEndpoints(UserHandler userHandler, GameHandler gameHandler, ClearHandler clearHandler, WebSocketHandler webSocketHandler) {
 
         app.delete("/db", clearHandler::clear);
 
@@ -72,6 +75,11 @@ public class Server {
         app.get("/game", gameHandler::listGames);
         app.post("/game", gameHandler::createGame);
         app.put("/game", gameHandler::joinGame);
+        app.ws("/ws", ws -> {
+            ws.onConnect(webSocketHandler);
+            ws.onMessage(webSocketHandler);
+            ws.onClose(webSocketHandler);
+        });
 
     }
 }
