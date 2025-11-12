@@ -11,6 +11,7 @@ import java.net.http.*;
 public class ServerFacade {
     private final HttpClient client = HttpClient.newHttpClient();
     private final String serverUrl;
+    private final Gson gson = new Gson();
 
     public ServerFacade(String url) {
         serverUrl = url;
@@ -33,7 +34,7 @@ public class ServerFacade {
     public LogoutResult logout(LogoutRequest logoutRequest) throws ResponseException {
         assert(logoutRequest != null);
         var token = logoutRequest.authToken();
-        var request = buildRequest("POST", "/session", logoutRequest, token);
+        var request = buildRequest("POST", "/session", null, token);
         var response = sendRequest(request);
         return handleResponse(response,  LogoutResult.class);
     }
@@ -47,7 +48,7 @@ public class ServerFacade {
 
     public JoinGameResult joinGame(JoinGameRequest joinGameRequest, String authToken) throws ResponseException {
         assert(joinGameRequest != null);
-        var request = buildRequest("POST", "/game", joinGameRequest, authToken);
+        var request = buildRequest("PUT", "/game", joinGameRequest, authToken);
         var response = sendRequest(request);
         return handleResponse(response,  JoinGameResult.class);
     }
@@ -55,7 +56,7 @@ public class ServerFacade {
     public ListGamesResult listGames(ListGameRequest listGameRequest) throws ResponseException {
         assert(listGameRequest != null);
         var token = listGameRequest.authToken();
-        var request = buildRequest("POST", "/game", listGameRequest, token);
+        var request = buildRequest("GET", "/game", listGameRequest, token);
         var response = sendRequest(request);
         return handleResponse(response,  ListGamesResult.class);
     }
@@ -76,16 +77,8 @@ public class ServerFacade {
         }
         b.method(method, body == null
                 ? HttpRequest.BodyPublishers.noBody()
-                : HttpRequest.BodyPublishers.ofString(new Gson().toJson(body)));
+                : HttpRequest.BodyPublishers.ofString(gson.toJson(body)));
         return b.build();
-    }
-
-    private HttpRequest.BodyPublisher makeRequestBody(Object request) {
-        if (request != null) {
-            return HttpRequest.BodyPublishers.ofString(new Gson().toJson(request));
-        } else {
-            return HttpRequest.BodyPublishers.noBody();
-        }
     }
 
     private HttpResponse<String> sendRequest(HttpRequest request) throws ResponseException {
@@ -108,7 +101,7 @@ public class ServerFacade {
         }
 
         if (responseClass != null) {
-            return new Gson().fromJson(response.body(), responseClass);
+            return gson.fromJson(response.body(), responseClass);
         }
 
         return null;
