@@ -39,21 +39,21 @@ public class ServerFacade {
 
     public CreateGameResult createGame(CreateGameRequest createGameRequest) throws ResponseException {
         assert(createGameRequest != null);
-        var request = buildRequest("POST", "/session", createGameRequest);
+        var request = buildRequest("POST", "/game", createGameRequest);
         var response = sendRequest(request);
         return handleResponse(response,  CreateGameResult.class);
     }
 
     public JoinGameResult joinGame(JoinGameRequest joinGameRequest) throws ResponseException {
         assert(joinGameRequest != null);
-        var request = buildRequest("POST", "/session", joinGameRequest);
+        var request = buildRequest("POST", "/game", joinGameRequest);
         var response = sendRequest(request);
         return handleResponse(response,  JoinGameResult.class);
     }
 
     public ListGamesResult listGames(ListGameRequest listGameRequest) throws ResponseException {
         assert(listGameRequest != null);
-        var request = buildRequest("POST", "/session", listGameRequest);
+        var request = buildRequest("POST", "/game", listGameRequest);
         var response = sendRequest(request);
         return handleResponse(response,  ListGamesResult.class);
     }
