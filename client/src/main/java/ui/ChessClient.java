@@ -7,53 +7,20 @@ import client.ServerFacade;
 import requests.*;
 import results.*;
 import webSocketMessages.Notification;
+import websocket.NotificationHandler;
+import websocket.WebSocketFacade;
 
-import java.net.URI;
-import java.util.HashMap;
-import java.util.Map;
-
-public class ChessClient extends Endpoint {
+public class ChessClient implements NotificationHandler {
     private String authToken;
-    private String baseURL;
+    private final String baseURL;
     private final ServerFacade server;
     private final Gson gson = new Gson();
-    private Session ws;
-    private Integer joinGameId;
-    private String joinGameColor;
+    private final WebSocketFacade ws;
 
-    public ChessClient(String serverUrl) {
+    public ChessClient(String serverUrl, WebSocketFacade ws) {
         this.baseURL = serverUrl.endsWith("/") ? serverUrl.substring(0, serverUrl.length() - 1) : serverUrl;
+        this.ws = ws;
         this.server = new ServerFacade(this.baseURL);
-    }
-
-    @Override
-    public void onOpen(Session session, EndpointConfig endpointConfig) {
-//        this.ws = session;
-//        this.ws.addMessageHandler(String.class, message -> {
-//            var map = gson.fromJson(message, Map.class);
-//            String type = (String) map.get("type");
-//
-//            switch (type) {
-//                case "PLAYER_JOINED" -> {
-//                    String username = (String) map.get("username");
-//                    String color = (String) map.get("color");
-//                    int gameID = ((Double) map.get("gameID")).intValue();
-//                    System.out.printf("[WS] %s joined game %d as %s%n", username, gameID, color);
-//                }
-//                case "NOTIFICATION" -> {
-//                    System.out.println("[WS Notice] " + map.get("message"));
-//                }
-//                case "GAME_STATE" -> {
-//                    System.out.println("[WS] Updated board:");
-//                    System.out.println(map.get("board"));
-//                }
-//                default -> {
-//                    System.out.println("[WS Unknown] " + message);
-//                }
-//            }
-//        });
-//
-//        System.out.println("[WS connected]");
     }
 
 
@@ -136,12 +103,12 @@ public class ChessClient extends Endpoint {
             var req = new JoinGameRequest(gameID, color);
             JoinGameResult res = server.joinGame(req, authToken);
 
-            this.joinGameId = gameID;  //POSSIBLE EDIT
-            this.joinGameColor = color;
+//            this.joinGameId = gameID;  //POSSIBLE EDIT
+//            this.joinGameColor = color;
 
             String wsURL = baseURL.replaceFirst("^http", "ws") + "/ws?authToken=" + authToken;
             WebSocketContainer container = ContainerProvider.getWebSocketContainer();
-            this.ws = container.connectToServer(this, URI.create(wsURL));
+//            this.ws = container.connectToServer(this, URI.create(wsURL));
 
             return "Joined game " + gameID + (color != null ? " as " + color : "");
         } catch (Exception e) {
@@ -158,5 +125,8 @@ public class ChessClient extends Endpoint {
     private static String nullToDash(String s) { return (s == null || s.isBlank()) ? "-" : s; }
 
 
+    @Override
+    public void notify(Notification notification) {
 
+    }
 }

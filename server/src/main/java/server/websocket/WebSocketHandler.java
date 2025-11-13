@@ -8,9 +8,7 @@ import io.javalin.websocket.WsConnectContext;
 import io.javalin.websocket.WsConnectHandler;
 import io.javalin.websocket.WsMessageContext;
 import io.javalin.websocket.WsMessageHandler;
-import org.eclipse.jetty.websocket.api.Session;
-import webSocketMessages.Action;
-import webSocketMessages.Notification;
+
 
 import java.io.IOException;
 
