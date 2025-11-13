@@ -53,8 +53,48 @@ public class ChessClient extends Endpoint {
         }
     }
 
+    public String logout() {
+        try {
+            if (authToken == null) return "Not logged in.";
+            var req = new LogoutRequest(authToken);
+            server.logout(req);
+            this.authToken = null;
+            return "Logged out.";
+        } catch (ResponseException e) {
+            return "Logout failed: " + e.getMessage();
+        }
+    }
+
     public String createGame(String[] params) {
-        return null;
+        try {
+            if (authToken == null) return "Please login first.";
+            if (params.length < 1) return "Usage: create <NAME>";
+            var name = String.join(" ", params);
+            var req = new CreateGameRequest(name);
+            CreateGameResult res = server.createGame(req, authToken);
+            return "Created game " + res.gameID() + " named \"" + name + "\"";
+        } catch (ResponseException e) {
+            return "Create failed: " + e.getMessage();
+        }
+    }
+
+    public String listGames() {
+        try {
+            if (authToken == null) return "Please login first.";
+            var req = new ListGameRequest(authToken);
+            ListGamesResult res = server.listGames(req);
+            // Table of games
+            var sb = new StringBuilder("Games:\n");
+            var games = res.games();
+            if (games == null || games.isEmpty()) return "No games found.";
+            for (var g : games) {
+                sb.append(String.format("  %-4d  %-20s  W:%s  B:%s%n",
+                        g.gameID(), g.gameName(), nullToDash(g.whiteUsername()), nullToDash(g.blackUsername())));
+            }
+            return sb.toString();
+        } catch (ResponseException e) {
+            return "List failed: " + e.getMessage();
+        }
     }
 
     public String observeGame(String[] params) {
@@ -65,11 +105,6 @@ public class ChessClient extends Endpoint {
         return null;
     }
 
-    public String logout() {
-        return null;
-    }
+    private static String nullToDash(String s) { return (s == null || s.isBlank()) ? "-" : s; }
 
-    public String listGames() {
-        return null;
-    }
 }
