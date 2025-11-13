@@ -1,8 +1,6 @@
 package ui;
 
-import com.google.gson.Gson;
 import exception.ResponseException;
-import jakarta.websocket.*;
 import client.ServerFacade;
 import requests.*;
 import results.*;
@@ -19,7 +17,7 @@ public class ChessClient implements NotificationHandler {
     private java.util.List<GameSummary> retrievedGames = java.util.List.of();
 
     private String authToken;
-    private final Gson gson = new Gson();
+//    private final Gson gson = new Gson();
 
 
     public ChessClient(String serverUrl) {
@@ -83,7 +81,7 @@ public class ChessClient implements NotificationHandler {
             var req = new ListGameRequest(authToken);
             ListGamesResult res = server.listGames(req);
 
-            var retrievedGames = (res.games() == null) ? java.util.List.<GameSummary>of() : res.games();
+            retrievedGames = (res.games() == null) ? java.util.List.<GameSummary>of() : res.games();
             if (retrievedGames.isEmpty()) { return "No games found."; }
 
             var sb = new StringBuilder("Games:\n");
@@ -166,11 +164,11 @@ public class ChessClient implements NotificationHandler {
     }
 
     //NEEDS IMPLEMENTATION FOR GAMEPLAY
-    public String move(String[] p) {
+    public String move(String[] params) {
         return null;
     }
 
-    public String leave(String[] p) {
+    public String leave() {
         try {
             if (ws == null) return "No game connection.";
             ws.leaveGame(currentGameID());

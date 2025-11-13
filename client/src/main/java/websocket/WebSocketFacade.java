@@ -17,7 +17,6 @@ import java.util.Map;
 //need to extend Endpoint for websocket to work properly
 public class WebSocketFacade extends Endpoint {
     private final Gson gson = new Gson();
-    private final NotificationHandler notificationHandler;
     private Session session;
 
     public WebSocketFacade(String url, String authToken, NotificationHandler notificationHandler) throws ResponseException {
@@ -25,8 +24,6 @@ public class WebSocketFacade extends Endpoint {
             url = url.replace( "http", "ws");
             String q = (authToken != null) ? "?authToken=" + URLEncoder.encode(authToken, StandardCharsets.UTF_8) : "";
             URI socketURI = new URI(url + "/ws" + q);
-
-            this.notificationHandler = notificationHandler;
 
             WebSocketContainer container = ContainerProvider.getWebSocketContainer();
             this.session = container.connectToServer(this, socketURI);

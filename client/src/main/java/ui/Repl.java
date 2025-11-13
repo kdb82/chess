@@ -74,7 +74,7 @@ public class Repl {
                 case "list":
                     return client.listGames();
                 case "leave":
-                    return client.leave(params);
+                    return client.leave();
                 default:
                     help();
             }

@@ -46,11 +46,11 @@ public class ServerFacade {
         return handleResponse(response,  CreateGameResult.class);
     }
 
-    public JoinGameResult joinGame(JoinGameRequest joinGameRequest, String authToken) throws ResponseException {
+    public void joinGame(JoinGameRequest joinGameRequest, String authToken) throws ResponseException {
         assert(joinGameRequest != null);
         var request = buildRequest("PUT", "/game", joinGameRequest, authToken);
         var response = sendRequest(request);
-        return handleResponse(response,  JoinGameResult.class);
+        handleResponse(response, JoinGameResult.class);
     }
 
     public ListGamesResult listGames(ListGameRequest listGameRequest) throws ResponseException {
