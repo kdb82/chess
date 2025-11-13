@@ -1,4 +1,3 @@
-import ui.ChessClient;
 import ui.Repl;
 
 public class Main {

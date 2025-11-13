@@ -81,7 +81,7 @@ public class ChessClient implements NotificationHandler {
             var req = new ListGameRequest(authToken);
             ListGamesResult res = server.listGames(req);
 
-            retrievedGames = (res.games() == null) ? java.util.List.<GameSummary>of() : res.games();
+            retrievedGames = (res.games() == null) ? java.util.List.of() : res.games();
             if (retrievedGames.isEmpty()) { return "No games found."; }
 
             var sb = new StringBuilder("Games:\n");
