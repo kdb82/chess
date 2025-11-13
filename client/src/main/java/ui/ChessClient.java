@@ -14,6 +14,7 @@ public class ChessClient implements NotificationHandler {
     private final String baseURL;
     private final ServerFacade server;
     private WebSocketFacade ws;
+    private Integer currentGameId;
 
     private String authToken;
     private final Gson gson = new Gson();
@@ -99,6 +100,7 @@ public class ChessClient implements NotificationHandler {
             if (params.length < 1) return "Usage: join <GAME_ID> [WHITE|BLACK]";
 
             var gameId = Integer.parseInt(params[0]);
+            this.currentGameId = gameId;
             String color = (params.length >= 2) ? params[1].toUpperCase() : null;
 
             var req = new JoinGameRequest(gameId, color);
@@ -113,9 +115,51 @@ public class ChessClient implements NotificationHandler {
     }
 
     public String observeGame(String[] params) {
+        try {
+            if (authToken == null) return "Please login first.";
+            if (params.length < 1) return "Usage: observe <GAME_ID>";
+            int gameID = Integer.parseInt(params[0]);
+            this.ws = new WebSocketFacade(baseURL, authToken, this);
+            ws.observeGame(gameID);
+            return "Observing game " + gameID;
+        } catch (Exception e) {
+            return "Observe failed: " + e.getMessage();
+        }
+    }
+
+    //NEEDS IMPLEMENTATION FOR GAMEPLAY
+    public String move(String[] p) {
         return null;
     }
+
+    public String leave(String[] p) {
+        try {
+            if (ws == null) return "No game connection.";
+            ws.leaveGame(currentGameID());
+            currentGameId = null;
+            ws.close();
+            return "Left the game.";
+        } catch (Exception e) {
+            return "Leave failed: " + e.getMessage();
+        }
+    }
+
     public void quit() {
+        try {
+            if (ws != null) {
+                ws.close();
+                ws = null;
+            }
+            authToken = null;
+            currentGameId = null;
+            System.out.println("Goodbye!");
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private int currentGameID() {
+        return this.currentGameId;
     }
 
     private static String nullToDash(String s) { return (s == null || s.isBlank()) ? "-" : s; }
@@ -123,6 +167,6 @@ public class ChessClient implements NotificationHandler {
 
     @Override
     public void notify(Notification notification) {
-
+        System.out.printf("[%s]: %s%n", notification.type(), notification);
     }
 }
