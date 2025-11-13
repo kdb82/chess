@@ -1,21 +1,24 @@
 package ui;
 
+import com.google.gson.Gson;
 import exception.ResponseException;
 import jakarta.websocket.Endpoint;
 import jakarta.websocket.EndpointConfig;
 import jakarta.websocket.Session;
 import client.ServerFacade;
-
+import requests.*;
+import results.*;
 
 public class ChessClient extends Endpoint {
+    private String authToken;
+    private String baseURL;
+    private final ServerFacade server;
+    private final Gson gson = new Gson();
+
 
     public ChessClient(String serverUrl) {
-        ServerFacade serverFacade = new ServerFacade(serverUrl);
-
-    }
-
-    public void run() {
-
+        this.baseURL = serverUrl.endsWith("/") ? serverUrl.substring(0, serverUrl.length() - 1) : serverUrl;
+        this.server = new ServerFacade(this.baseURL);
     }
 
     @Override
@@ -27,12 +30,27 @@ public class ChessClient extends Endpoint {
     }
 
     public String login(String[] params) throws ResponseException {
-
-        return null;
+        if (params.length != 2) {return "USAGE: login <username> <password>";}
+        var request = new LoginRequest(params[0], params[1]);
+        try {
+            LoginResult result = server.login(request);
+            this.authToken = result.authToken();
+            return "Logged as " + params[0];
+        } catch (ResponseException e) {
+            return "Login failed: " + e.getMessage();
+        }
     }
 
     public String register(String[] params) {
-        return null;
+        if (params.length != 3) return "USAGE:  register <username> <password> <email>";
+        var request = new RegisterRequest(params[0], params[1], params[2]);
+        try {
+            RegisterResult result = server.register(request);
+            this.authToken = result.authToken();
+            return "Registered and logged in as " + params[0];
+        } catch (ResponseException e) {
+            return "Register failed: " + e.getMessage();
+        }
     }
 
     public String createGame(String[] params) {

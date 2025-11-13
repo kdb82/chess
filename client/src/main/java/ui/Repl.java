@@ -1,6 +1,8 @@
 package ui;
 
 
+import exception.ResponseException;
+
 import java.util.Arrays;
 import java.util.Scanner;
 
@@ -39,12 +41,15 @@ public class Repl {
     }
 
     private void printPrompt() {
-        System.out.printf("[%s] >>>", state);
+        System.out.printf("[%s] >>> ", state);
     }
 
     private String eval(String line) {
-        String[] tokens = line.toLowerCase().split(" ");
-        String command = (tokens.length > 0) ? tokens[0] : "help";
+        if (line == null || line.isBlank()) {
+            return "";
+        }
+        String[] tokens = line.trim().split("\\s+");
+        String command = tokens.length > 0 ? tokens[0].toLowerCase() : "help";
         String[] params = Arrays.copyOfRange(tokens, 1, tokens.length);
         try {
             switch (command) {
@@ -71,14 +76,14 @@ public class Repl {
                 default:
                     help();
             }
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+        } catch (ResponseException e) {
+            throw new RuntimeException(e.getMessage());
         }
         return "";
     }
 
     private void help() {
-        if (state.equals(ClientState.LOGGED_OUT)) {
+        if (state == ClientState.LOGGED_OUT) {
             String msg = """
             help: display all available commands
             quit: playing chess
@@ -86,7 +91,7 @@ public class Repl {
             login <USERNAME> <PASSWORD>: log in to account
             """;
             System.out.println(msg);
-        } else if (state.equals(ClientState.LOGGED_IN)) {
+        } else if (state == ClientState.LOGGED_IN) {
             String msg = """
             help: display all available commands
             quit: playing chess

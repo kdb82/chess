@@ -2,7 +2,8 @@ package ui;
 
 public class DrawBoard {
 
-    private void drawBoard() {
-
+    public static void drawBoard() {
     }
+
+
 }
