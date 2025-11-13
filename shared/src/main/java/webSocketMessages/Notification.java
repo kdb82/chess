@@ -6,7 +6,8 @@ public record Notification(Type type, String message) {
     public enum Type {
         JOIN,
         LEAVE,
-        MOVE
+        MOVE,
+        Error
     }
 
     public String toString() {
