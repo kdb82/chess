@@ -13,7 +13,7 @@ public class Main {
         try {
             new Repl(serverURL).run();
         } catch (Exception e) {
-
+            System.out.println(e.getMessage());
         }
     }
 }
