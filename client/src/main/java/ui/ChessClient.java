@@ -11,15 +11,16 @@ import websocket.NotificationHandler;
 import websocket.WebSocketFacade;
 
 public class ChessClient implements NotificationHandler {
-    private String authToken;
     private final String baseURL;
     private final ServerFacade server;
-    private final Gson gson = new Gson();
-    private final WebSocketFacade ws;
+    private WebSocketFacade ws;
 
-    public ChessClient(String serverUrl, WebSocketFacade ws) {
-        this.baseURL = serverUrl.endsWith("/") ? serverUrl.substring(0, serverUrl.length() - 1) : serverUrl;
-        this.ws = ws;
+    private String authToken;
+    private final Gson gson = new Gson();
+
+
+    public ChessClient(String serverUrl) {
+        this.baseURL = serverUrl;
         this.server = new ServerFacade(this.baseURL);
     }
 
@@ -97,20 +98,15 @@ public class ChessClient implements NotificationHandler {
             if (authToken == null) return "Please login first.";
             if (params.length < 1) return "Usage: join <GAME_ID> [WHITE|BLACK]";
 
-            int gameID = Integer.parseInt(params[0]);
+            var gameId = Integer.parseInt(params[0]);
             String color = (params.length >= 2) ? params[1].toUpperCase() : null;
 
-            var req = new JoinGameRequest(gameID, color);
-            JoinGameResult res = server.joinGame(req, authToken);
+            var req = new JoinGameRequest(gameId, color);
+            server.joinGame(req, authToken);
 
-//            this.joinGameId = gameID;  //POSSIBLE EDIT
-//            this.joinGameColor = color;
-
-            String wsURL = baseURL.replaceFirst("^http", "ws") + "/ws?authToken=" + authToken;
-            WebSocketContainer container = ContainerProvider.getWebSocketContainer();
-//            this.ws = container.connectToServer(this, URI.create(wsURL));
-
-            return "Joined game " + gameID + (color != null ? " as " + color : "");
+            this.ws = new WebSocketFacade(baseURL, authToken, this);
+            ws.joinGame(gameId, color);
+            return "Joined game " + gameId + (color != null ? " as " + color : "");
         } catch (Exception e) {
             return "Join failed: " + e.getMessage();
         }

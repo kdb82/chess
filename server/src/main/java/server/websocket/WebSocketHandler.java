@@ -5,7 +5,6 @@ import io.javalin.websocket.*;
 import org.eclipse.jetty.websocket.api.Session;
 import webSocketMessages.Notification;
 
-import java.io.IOException;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -21,6 +20,7 @@ public class WebSocketHandler implements WsConnectHandler, WsMessageHandler, WsC
         System.out.println("[WS] connected");
         ctx.enableAutomaticPings();
         Session session = ctx.session;
+        connections.add(session);
         sendTo(session, new Notification(Notification.Type.JOIN, "Connected"));
     }
 
@@ -55,17 +55,43 @@ public class WebSocketHandler implements WsConnectHandler, WsMessageHandler, WsC
                     watchers.computeIfAbsent(gameId, k -> ConcurrentHashMap.newKeySet()).add(session);
 
                     sendTo(session, new Notification(Notification.Type.JOIN, "Observing game " + gameId));
-                    broadcastToGame();
+                    broadcastToGame(gameId, session, new Notification(Notification.Type.JOIN, "Observer joined game " + gameId));
+                }
+
+                case "MOVE": {
+                    //Implement
+                }
+
+                case "RESIGN": {
+                    //implement
+                }
+
+                case "Leave": {
+                    int gameID = ((Number) msg.get("gameID")).intValue();
+                    removeWatcher(gameID, session);
+                    sendTo(session, new Notification(Notification.Type.LEAVE, "Left game " + gameID));
+                    broadcastToGame(gameID, session,
+                            new Notification(Notification.Type.LEAVE, "A player left game " + gameID));
+                }
+                default: {
+                    sendTo(session, new Notification(Notification.Type.Error, "Unknown type " + type));
                 }
             }
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            sendTo(ctx.session,  new Notification(Notification.Type.Error, e.getMessage()));
         }
     }
 
     @Override
     public void handleClose(WsCloseContext ctx) {
-        System.out.println("Websocket closed");
+        System.out.println("[WS] closed");
+        Session session = ctx.session;
+        connections.remove(session);
+    }
+
+    private void removeWatcher(int gameID, Session s) {
+        var set = watchers.get(gameID);
+        if (set != null) set.remove(s);
     }
 
     private void sendTo(Session s, Notification n) {
@@ -85,4 +111,6 @@ public class WebSocketHandler implements WsConnectHandler, WsMessageHandler, WsC
             }
         }
     }
+
+
 }

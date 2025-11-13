@@ -7,6 +7,7 @@ public record Notification(Type type, String message) {
         JOIN,
         LEAVE,
         MOVE,
+        OBSERVE,
         Error
     }
 
