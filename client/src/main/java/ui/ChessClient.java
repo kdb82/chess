@@ -10,11 +10,13 @@ import webSocketMessages.Notification;
 import websocket.NotificationHandler;
 import websocket.WebSocketFacade;
 
+
 public class ChessClient implements NotificationHandler {
     private final String baseURL;
     private final ServerFacade server;
     private WebSocketFacade ws;
     private Integer currentGameId;
+    private java.util.List<GameSummary> retrievedGames = java.util.List.of();
 
     private String authToken;
     private final Gson gson = new Gson();
@@ -80,18 +82,30 @@ public class ChessClient implements NotificationHandler {
             if (authToken == null) return "Please login first.";
             var req = new ListGameRequest(authToken);
             ListGamesResult res = server.listGames(req);
-            // Table of games
+
+            var retrievedGames = (res.games() == null) ? java.util.List.<GameSummary>of() : res.games();
+            if (retrievedGames.isEmpty()) { return "No games found."; }
+
             var sb = new StringBuilder("Games:\n");
-            var games = res.games();
-            if (games == null || games.isEmpty()) return "No games found.";
-            for (var g : games) {
-                sb.append(String.format("  %-4d  %-20s  W:%s  B:%s%n",
-                        g.gameID(), g.gameName(), nullToDash(g.whiteUsername()), nullToDash(g.blackUsername())));
+            for (int i = 0; i < retrievedGames.size(); i++) {
+                var g = retrievedGames.get(i);
+                sb.append(String.format("  %-3d  %-20s  W:%s  B:%s%n",
+                        (i+1), g.gameName(),
+                        nullToDash(g.whiteUsername()), nullToDash(g.blackUsername())));
             }
             return sb.toString();
         } catch (ResponseException e) {
             return "List failed: " + e.getMessage();
         }
+    }
+    private Integer gameIdFromNumber(String num) {
+        try {
+            int n = Integer.parseInt(num);
+            if (n >= 1 && n <= retrievedGames.size()) {
+                return retrievedGames.get(n - 1).gameID();
+            }
+        } catch (NumberFormatException ignore) {}
+        try { return Integer.parseInt(num); } catch (Exception e) { return null; }
     }
 
     public String joinGame(String[] params) {
@@ -99,16 +113,27 @@ public class ChessClient implements NotificationHandler {
             if (authToken == null) return "Please login first.";
             if (params.length < 1) return "Usage: join <GAME_ID> [WHITE|BLACK]";
 
-            var gameId = Integer.parseInt(params[0]);
-            this.currentGameId = gameId;
+            Integer gid = gameIdFromNumber(params[0]);
+            if (gid == null) { return "Invalid selection. Run 'list' and use the game's number.";}
+
+            this.currentGameId = gid;
             String color = (params.length >= 2) ? params[1].toUpperCase() : null;
 
-            var req = new JoinGameRequest(gameId, color);
+            var req = new JoinGameRequest(gid, color);
             server.joinGame(req, authToken);
 
-            this.ws = new WebSocketFacade(baseURL, authToken, this);
-            ws.joinGame(gameId, color);
-            return "Joined game " + gameId + (color != null ? " as " + color : "");
+            if (ws == null) ws = new WebSocketFacade(baseURL, authToken, this);
+            ws.joinGame(gid, color);
+
+            String displayName = "#" + gid;
+            for (var game : retrievedGames) {
+                if (game.gameID() == gid) {
+                    displayName = game.gameName();
+                    break;
+                }
+            }
+
+            return "Joined \"" + displayName + "\"" + (color != null ? " as " + color : "");
         } catch (Exception e) {
             return "Join failed: " + e.getMessage();
         }
@@ -118,10 +143,23 @@ public class ChessClient implements NotificationHandler {
         try {
             if (authToken == null) return "Please login first.";
             if (params.length < 1) return "Usage: observe <GAME_ID>";
-            int gameID = Integer.parseInt(params[0]);
-            this.ws = new WebSocketFacade(baseURL, authToken, this);
-            ws.observeGame(gameID);
-            return "Observing game " + gameID;
+
+            Integer gid = gameIdFromNumber(params[0]);
+            if (gid == null) {return "Invalid selection. Run 'list' and use the game's number.";}
+            this.currentGameId = gid;
+
+            if (ws == null) this.ws = new WebSocketFacade(baseURL, authToken, this);
+            ws.observeGame(gid);
+
+            String displayName = "#" + gid;
+            for (var game : retrievedGames) {
+                if (game.gameID() == gid) {
+                    displayName = game.gameName();
+                    break;
+                }
+            }
+
+            return "Observing game \"" + displayName + "\"";
         } catch (Exception e) {
             return "Observe failed: " + e.getMessage();
         }
@@ -157,6 +195,7 @@ public class ChessClient implements NotificationHandler {
             throw new RuntimeException(e);
         }
     }
+
 
     private int currentGameID() {
         return this.currentGameId;

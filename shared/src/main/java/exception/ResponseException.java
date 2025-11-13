@@ -23,12 +23,18 @@ public class ResponseException extends Exception {
         return new Gson().toJson(Map.of("message", getMessage(), "status", code));
     }
 
-    public static ResponseException fromJson(String json) {
+    public static ResponseException fromJson(int httpStatus, String json) {
         var map = new Gson().fromJson(json, HashMap.class);
-        var status = Code.valueOf(map.get("status").toString());
-        String message = map.get("message").toString();
-        return new ResponseException(status, message);
+
+        String message = "Error: " + httpStatus;
+        if (map != null && map.get("message") != null) {
+            message = map.get("message").toString();
+        }
+
+        Code code = fromHttpStatusCode(httpStatus); // you write this helper
+        return new ResponseException(code, message);
     }
+
 
     public Code code() {
         return code;
@@ -37,7 +43,7 @@ public class ResponseException extends Exception {
     public static Code fromHttpStatusCode(int httpStatusCode) {
         return switch (httpStatusCode) {
             case 500 -> Code.ServerError;
-            case 400 -> Code.ClientError;
+            case 400, 401, 403 -> Code.ClientError;
             default -> throw new IllegalArgumentException("Unknown HTTP status code: " + httpStatusCode);
         };
     }
