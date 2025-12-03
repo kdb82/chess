@@ -14,6 +14,7 @@ public class ChessClient implements NotificationHandler {
     private final ServerFacade server;
     private WebSocketFacade ws;
     private Integer currentGameId;
+    private boolean drawWhiteSide = true;
     private java.util.List<GameSummary> retrievedGames = java.util.List.of();
 
     private String authToken;
@@ -123,6 +124,9 @@ public class ChessClient implements NotificationHandler {
             if (ws == null) ws = new WebSocketFacade(baseURL, authToken, this);
             ws.joinGame(gid, color);
 
+            this.drawWhiteSide = (color == null) || !color.equals("BLACK");
+            DrawBoard.drawInitial(this.drawWhiteSide);
+
             String displayName = "#" + gid;
             for (var game : retrievedGames) {
                 if (game.gameID() == gid) {
@@ -148,6 +152,9 @@ public class ChessClient implements NotificationHandler {
 
             if (ws == null) this.ws = new WebSocketFacade(baseURL, authToken, this);
             ws.observeGame(gid);
+
+            this.drawWhiteSide = true;
+            DrawBoard.drawInitial(true);
 
             String displayName = "#" + gid;
             for (var game : retrievedGames) {
