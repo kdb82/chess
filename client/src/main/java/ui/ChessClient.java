@@ -8,6 +8,9 @@ import webSocketMessages.Notification;
 import websocket.NotificationHandler;
 import websocket.WebSocketFacade;
 
+import java.util.HashMap;
+import java.util.Map;
+
 
 public class ChessClient implements NotificationHandler {
     private final String baseURL;
@@ -18,6 +21,9 @@ public class ChessClient implements NotificationHandler {
     private java.util.List<GameSummary> retrievedGames = java.util.List.of();
 
     private String authToken;
+    private final Map<Integer, Integer> stableIndex = new HashMap<>();
+    private int nextDisplayIndex = 1;
+
 //    private final Gson gson = new Gson();
 
 
@@ -85,11 +91,12 @@ public class ChessClient implements NotificationHandler {
             retrievedGames = (res.games() == null) ? java.util.List.of() : res.games();
             if (retrievedGames.isEmpty()) { return "No games found."; }
 
-            var sb = new StringBuilder("Games:\n");
-            for (int i = 0; i < retrievedGames.size(); i++) {
-                var g = retrievedGames.get(i);
+            var sb = new StringBuilder("Games:\nId:    game name:        white user:  black user:\n");
+            for (var g :  retrievedGames) {
+                stableIndex.computeIfAbsent(g.gameID(), id -> nextDisplayIndex++);
+                int displayNum = stableIndex.get(g.gameID());
                 sb.append(String.format("  %-3d  %-20s  W:%s  B:%s%n",
-                        (i+1), g.gameName(),
+                        displayNum, g.gameName(),
                         nullToDash(g.whiteUsername()), nullToDash(g.blackUsername())));
             }
             return sb.toString();
@@ -110,13 +117,13 @@ public class ChessClient implements NotificationHandler {
     public String joinGame(String[] params) {
         try {
             if (authToken == null) return "Please login first.";
-            if (params.length < 1) return "Usage: join <GAME_ID> [WHITE|BLACK]";
+            if (params.length < 2) return "Usage: join <GAME_ID> [WHITE|BLACK]\nRun 'list' to see games";
 
             Integer gid = gameIdFromNumber(params[0]);
-            if (gid == null) { return "Invalid selection. Run 'list' and use the game's number.";}
+            if (gid == null) { return "Invalid selection. Game seat may be taken or game doesn't exist.\nRun 'list' to see games or 'create' to make your own.";}
 
             this.currentGameId = gid;
-            String color = (params.length >= 2) ? params[1].toUpperCase() : null;
+            String color = params[1].toUpperCase();
 
             var req = new JoinGameRequest(gid, color);
             server.joinGame(req, authToken);
@@ -135,9 +142,9 @@ public class ChessClient implements NotificationHandler {
                 }
             }
 
-            return "Joined \"" + displayName + "\"" + (color != null ? " as " + color : "");
+            return "Joined \"" + displayName + "\"" + " as " + color;
         } catch (Exception e) {
-            return "Join failed: " + e.getMessage();
+            return "Join failed: Game seat may be taken or game doesn't exist.\nRun 'list' to see games or 'create' to make your own.";
         }
     }
 
