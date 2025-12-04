@@ -119,7 +119,7 @@ public class ChessClient implements NotificationHandler {
             if (ws == null) ws = new WebSocketFacade(baseURL, authToken, this);
             ws.joinGame(gid, color);
 
-            this.drawWhiteSide = (color == null) || !color.equals("BLACK");
+            this.drawWhiteSide = !color.equals("BLACK");
             DrawBoard.drawInitial(this.drawWhiteSide);
 
             String displayName = "#" + gid;
