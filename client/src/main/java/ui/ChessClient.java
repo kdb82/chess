@@ -131,6 +131,8 @@ public class ChessClient implements NotificationHandler {
 
             if (currentGameId != null && currentGameId.equals(gid)) {
                 return "Already joined this game.";
+            } else if (currentGameId != null && !currentGameId.equals(gid) && ws != null) {
+                return "must leave current game first";
             }
 
             this.currentGameId = gid;
@@ -208,14 +210,18 @@ public class ChessClient implements NotificationHandler {
     }
 
     public String leave() throws ResponseException {
-        if (ws == null) return "No game connection.";
+        if (ws == null || currentGameId == null) {
+            return "No game to leave.";
+        }
         ws.leaveGame(currentGameID());
         currentGameId = null;
-        ws.close();
         return "Left the game.";
     }
 
-    public void quit() {
+    public void quit() throws ResponseException {
+        if(currentGameId != null) {
+            ws.leaveGame(currentGameId);
+        }
         try {
             if (ws != null) {
                 ws.close();

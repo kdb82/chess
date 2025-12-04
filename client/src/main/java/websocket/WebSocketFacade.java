@@ -14,7 +14,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
-//need to extend Endpoint for websocket to work properly
+
 public class WebSocketFacade extends Endpoint {
     private final NotificationHandler notificationHandler;
     private final Gson gson = new Gson();
@@ -48,6 +48,7 @@ public class WebSocketFacade extends Endpoint {
                 }
             } catch (Exception e) {
                 System.out.println("[WS CLIENT] ERROR parsing message:");
+                //noinspection CallToPrintStackTrace
                 e.printStackTrace();
             }
         });
@@ -57,6 +58,7 @@ public class WebSocketFacade extends Endpoint {
     @Override
     public void onError(Session session, Throwable thr) {
         System.out.println("[WS CLIENT] onError called!");
+        //noinspection CallToPrintStackTrace
         thr.printStackTrace();
     }
 
