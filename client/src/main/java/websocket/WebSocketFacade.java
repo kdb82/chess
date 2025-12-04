@@ -16,28 +16,24 @@ import java.util.Map;
 
 //need to extend Endpoint for websocket to work properly
 public class WebSocketFacade extends Endpoint {
+    private final String baseUrl;
+    private final String authToken;
+    private final NotificationHandler notificationHandler;
     private final Gson gson = new Gson();
     private Session session;
 
     public WebSocketFacade(String url, String authToken, NotificationHandler notificationHandler) throws ResponseException {
+        this.baseUrl = url;
+        this.authToken = authToken;
+        this.notificationHandler = notificationHandler;
         try {
-            url = url.replace( "http", "ws");
-            String q = (authToken != null) ? "?authToken=" + URLEncoder.encode(authToken, StandardCharsets.UTF_8) : "";
-            URI socketURI = new URI(url + "/ws" + q);
+            String encoded = URLEncoder.encode(authToken, StandardCharsets.UTF_8);
+            String wsUrl = baseUrl.replaceFirst("http", "ws") + "/ws?authToken=" + encoded;
+            URI uri = new URI(wsUrl);
 
             WebSocketContainer container = ContainerProvider.getWebSocketContainer();
-            this.session = container.connectToServer(this, socketURI);
-
-            //set message handler
-            this.session.addMessageHandler((MessageHandler.Whole<String>) message -> {
-                try {
-                    Notification notification = new Gson().fromJson(message, Notification.class);
-                    notificationHandler.notify(notification);
-                } catch (Exception e) {
-                    System.out.println("[WS error] " + e.getMessage());
-                }
-            });
-        } catch (DeploymentException | IOException | URISyntaxException ex) {
+            container.connectToServer(this, uri);
+        } catch (URISyntaxException | IOException | jakarta.websocket.DeploymentException ex) {
             throw new ResponseException(ResponseException.Code.ServerError, ex.getMessage());
         }
     }
@@ -47,6 +43,30 @@ public class WebSocketFacade extends Endpoint {
     public void onOpen(Session session, EndpointConfig endpointConfig) {
         this.session = session;
         System.out.println("[WS] connected");
+
+        session.addMessageHandler(String.class, message -> {
+            try {
+                Notification notification = gson.fromJson(message, Notification.class);
+                if (notificationHandler != null) {
+                    notificationHandler.notify(notification);
+                }
+            } catch (Exception e) {
+                System.out.println("[WS CLIENT] ERROR parsing message:");
+                e.printStackTrace();
+            }
+        });
+
+    }
+
+    @Override
+    public void onError(Session session, Throwable thr) {
+        System.out.println("[WS CLIENT] onError called!");
+        thr.printStackTrace();
+    }
+
+    @Override
+    public void onClose(Session session, CloseReason closeReason) {
+        System.out.println("[WS closed]");
     }
 
     public void close() {

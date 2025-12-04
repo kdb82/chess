@@ -40,7 +40,7 @@ public class Repl {
         }
     }
 
-    private void printPrompt() {
+    public void printPrompt() {
         System.out.printf("[%s] >>> ", state);
     }
 

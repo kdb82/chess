@@ -12,12 +12,12 @@ import java.util.concurrent.ConcurrentHashMap;
 public class WebSocketHandler implements WsConnectHandler, WsMessageHandler, WsCloseHandler {
     private final Gson gson = new Gson();
     private final ConnectionManager connections = new ConnectionManager();
-    private final Map<Integer, Set<Session>> watchers = new ConcurrentHashMap<>();
+    private static final Map<Integer, Set<Session>> watchers = new ConcurrentHashMap<>();
 
 
     @Override
     public void handleConnect(WsConnectContext ctx) {
-        System.out.println("[WS] connected");
+        System.out.println("[WS SERVER] connected");
         ctx.enableAutomaticPings();
         Session session = ctx.session;
         connections.add(session);
@@ -26,6 +26,7 @@ public class WebSocketHandler implements WsConnectHandler, WsMessageHandler, WsC
 
     @Override
     public void handleMessage(WsMessageContext ctx) {
+        System.out.println("[WS SERVER] incoming: " + ctx.message());
         Session session = ctx.session;
         try {
             Map<String, Object> msg = gson.fromJson(ctx.message(), Map.class);
@@ -43,11 +44,12 @@ public class WebSocketHandler implements WsConnectHandler, WsMessageHandler, WsC
                     watchers.computeIfAbsent(gameId, k -> ConcurrentHashMap.newKeySet()).add(session);
 
                     sendTo(session, new Notification(Notification.Type.JOIN,
-                            (color != null ? "Joined as " + color : "Joined as observer") + " (game " + gameId + ")"));
+                            (color != null ? "Player joined as " + color : "Joined as observer") + " (gameId " + gameId + ")"));
 
                     broadcastToGame(gameId, session,
                             new Notification(Notification.Type.JOIN, "Player joined game " + gameId +
                                     (color != null ? " (" + color + ")" : "")));
+                    break;
                 }
 
                 case "OBSERVE": {
@@ -56,22 +58,26 @@ public class WebSocketHandler implements WsConnectHandler, WsMessageHandler, WsC
 
                     sendTo(session, new Notification(Notification.Type.JOIN, "Observing game " + gameId));
                     broadcastToGame(gameId, session, new Notification(Notification.Type.JOIN, "Observer joined game " + gameId));
+                    break;
                 }
 
                 case "MOVE": {
                     //Implement
+                    break;
                 }
 
                 case "RESIGN": {
                     //implement
+                    break;
                 }
 
-                case "Leave": {
-                    int gameID = ((Number) msg.get("gameID")).intValue();
-                    removeWatcher(gameID, session);
-                    sendTo(session, new Notification(Notification.Type.LEAVE, "Left game " + gameID));
-                    broadcastToGame(gameID, session,
-                            new Notification(Notification.Type.LEAVE, "A player left game " + gameID));
+                case "LEAVE": {
+                    int gameId = ((Number) msg.get("gameId")).intValue();
+                    removeWatcher(gameId, session);
+                    sendTo(session, new Notification(Notification.Type.LEAVE, "Left game " + gameId));
+                    broadcastToGame(gameId, session,
+                            new Notification(Notification.Type.LEAVE, "A player left game " + gameId));
+                    break;
                 }
                 default: {
                     sendTo(session, new Notification(Notification.Type.Error, "Unknown type " + type));
@@ -97,14 +103,18 @@ public class WebSocketHandler implements WsConnectHandler, WsMessageHandler, WsC
     private void sendTo(Session s, Notification n) {
         if (s == null || !s.isOpen()) return;
         try {
-            s.getRemote().sendString(n.toString());
-        } catch (Exception ignored) {}
+            String json = gson.toJson(n);
+            System.out.println("[WS SERVER] sendTo -> " + json);
+            s.getRemote().sendString(gson.toJson(n));
+        } catch (Exception ex) {
+            System.out.println("[WS SERVER] sendTo ERROR: " + ex.getMessage());
+        }
     }
 
     private void broadcastToGame(int gameID, Session exclude, Notification n) {
         var set = watchers.get(gameID);
         if (set == null || set.isEmpty()) return;
-        String json = n.toString();
+        String json = gson.toJson(n);
         for (Session s : set) {
             if (s.isOpen() && s != exclude) {
                 try { s.getRemote().sendString(json); } catch (Exception ignored) {}
