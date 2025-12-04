@@ -19,18 +19,17 @@ public class ChessClient implements NotificationHandler {
     private java.util.List<GameSummary> retrievedGames = java.util.List.of();
 
     private String authToken;
-    private volatile boolean waitingForWs = false;
-//    private final Gson gson = new Gson();
-
+    private boolean isPlayer;
+//    private volatile boolean waitingForWs = false;
 
     public ChessClient(String serverUrl) {
         this.baseURL = serverUrl;
         this.server = new ServerFacade(this.baseURL);
     }
 
-    public boolean isWaitingForWs() {
-        return waitingForWs;
-    }
+//    public boolean isWaitingForWs() {
+//        return waitingForWs;
+//    }
 
     public String login(String[] params) throws ResponseException {
         if (params.length != 2) {
@@ -142,7 +141,8 @@ public class ChessClient implements NotificationHandler {
             server.joinGame(req, authToken);
 
             if (ws == null) ws = new WebSocketFacade(baseURL, authToken, this);
-            waitingForWs = true;
+//            waitingForWs = true;
+            isPlayer = true;
             ws.joinGame(gid, color);
 
 
@@ -182,7 +182,8 @@ public class ChessClient implements NotificationHandler {
             this.currentGameId = gid;
 
             if (ws == null) this.ws = new WebSocketFacade(baseURL, authToken, this);
-            waitingForWs = true;
+//            waitingForWs = true;
+            isPlayer = false;
             ws.observeGame(gid);
 
             this.drawWhiteSide = true;
@@ -213,14 +214,15 @@ public class ChessClient implements NotificationHandler {
         if (ws == null || currentGameId == null) {
             return "No game to leave.";
         }
-        ws.leaveGame(currentGameID());
+        ws.leaveGame(currentGameID(), isPlayer);
         currentGameId = null;
         return "Left the game.";
     }
 
-    public void quit() throws ResponseException {
+    public boolean quit() throws ResponseException {
         if(currentGameId != null) {
-            ws.leaveGame(currentGameId);
+            System.out.print("Must leave the game before quitting...");
+            return false;
         }
         try {
             if (ws != null) {
@@ -230,6 +232,7 @@ public class ChessClient implements NotificationHandler {
             authToken = null;
             currentGameId = null;
             System.out.println("Goodbye!");
+            return true;
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -252,7 +255,7 @@ public class ChessClient implements NotificationHandler {
             System.out.println("[WebSocket message: " + notification.type() + "]: " + notification.message());
             System.out.printf("[%s] >>> ", ClientState.LOGGED_IN);
         }
-        waitingForWs = false;
+//        waitingForWs = false;
     }
 
 }

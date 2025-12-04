@@ -50,7 +50,21 @@ public class GameService {
         }
 
         try {
-            gameDao.updateGamePlayer(request.gameID(), playerColor, username);
+            if (playerColor.equals("WHITE")) {
+                String game_user = game.whiteUsername();
+                if (game_user == null) {
+                    gameDao.updateGamePlayer(request.gameID(), playerColor, username);
+                } else if (!game_user.equals(username)) {
+                    throw new DataAccessException("Error: " + playerColor + " seat already taken by " + game_user);
+                }
+            } else if (playerColor.equals("BLACK")) {
+                String game_user = game.blackUsername();
+                if (game_user == null) {
+                    gameDao.updateGamePlayer(request.gameID(), playerColor, username);
+                }  else if (!game_user.equals(username)) {
+                    throw new DataAccessException("Error: " + playerColor + " seat already taken by " + game_user);
+                }
+            }
         } catch (DataAccessException ex) {
             String m = ex.getMessage() == null ? "" : ex.getMessage().toLowerCase();
             if (m.contains("already taken") || m.contains("white already taken") || m.contains("black already taken")) {

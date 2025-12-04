@@ -73,10 +73,17 @@ public class WebSocketHandler implements WsConnectHandler, WsMessageHandler, WsC
 
                 case "LEAVE": {
                     int gameId = ((Number) msg.get("gameId")).intValue();
+                    boolean isPlayer = (boolean) msg.get("isPlayer");
                     removeWatcher(gameId, session);
-                    sendTo(session, new Notification(Notification.Type.LEAVE, "Left game " + gameId));
-                    broadcastToGame(gameId, session,
-                            new Notification(Notification.Type.LEAVE, "A player left game " + gameId));
+//                    sendTo(session, new Notification(Notification.Type.LEAVE, "Left game " + gameId));
+                    if(isPlayer) {
+                        broadcastToGame(gameId, session,
+                                new Notification(Notification.Type.LEAVE, "A player left game " + gameId));
+                    } else {
+                        broadcastToGame(gameId, session,
+                                new Notification(Notification.Type.LEAVE, "An observer left game " + gameId));
+                    }
+
                     break;
                 }
                 default: {

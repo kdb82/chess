@@ -27,9 +27,9 @@ public class Repl {
         var result = "";
         while (!result.equals("quitting chess")) {
 
-            while(client.isWaitingForWs()) {
-                Thread.sleep(1);
-            }
+//            while(client.isWaitingForWs()) {
+//                Thread.sleep(1);
+//            }
 
             printPrompt();
             String line =  scanner.nextLine();
@@ -58,8 +58,10 @@ public class Repl {
         String result;
         switch (command) {
             case "quit":
-                client.quit();
-                return "quitting chess";
+                var quitSuccess = client.quit();
+                if (quitSuccess) {
+                    return "quitting chess";
+                } else return "";
             case "login":
                 result = client.login(params);
                 state = ClientState.LOGGED_IN;
