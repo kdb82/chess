@@ -9,6 +9,7 @@ import websocket.NotificationHandler;
 import websocket.WebSocketFacade;
 
 
+
 public class ChessClient implements NotificationHandler {
     private final String baseURL;
     private final ServerFacade server;
@@ -18,6 +19,7 @@ public class ChessClient implements NotificationHandler {
     private java.util.List<GameSummary> retrievedGames = java.util.List.of();
 
     private String authToken;
+    private volatile boolean waitingForWs = false;
 //    private final Gson gson = new Gson();
 
 
@@ -26,6 +28,9 @@ public class ChessClient implements NotificationHandler {
         this.server = new ServerFacade(this.baseURL);
     }
 
+    public boolean isWaitingForWs() {
+        return waitingForWs;
+    }
 
     public String login(String[] params) throws ResponseException {
         if (params.length != 2) {
@@ -77,21 +82,26 @@ public class ChessClient implements NotificationHandler {
                 return "No games found.";
             }
 
-            var sb = new StringBuilder("Games:\nId:    game name:        white user:  black user:\n");
-            for (int i = 0; i < retrievedGames.size(); i++) {
-                var g = retrievedGames.get(i);
-                sb.append(String.format(
-                        " %-3d %-20s W:%s  B:%s%n",
-                        (i + 1),
-                        g.gameName(),
-                        nullToDash(g.whiteUsername()),
-                        nullToDash(g.blackUsername())
-                ));
-            }
+            var sb = getStringBuilder();
             return sb.toString();
         } catch (ResponseException e) {
             return "List failed: " + e.getMessage();
         }
+    }
+
+    private StringBuilder getStringBuilder() {
+        var sb = new StringBuilder("Games:\nId:    game name:        white user:  black user:\n");
+        for (int i = 0; i < retrievedGames.size(); i++) {
+            var g = retrievedGames.get(i);
+            sb.append(String.format(
+                    " %-3d %-20s W:%s  B:%s%n",
+                    (i + 1),
+                    g.gameName(),
+                    nullToDash(g.whiteUsername()),
+                    nullToDash(g.blackUsername())
+            ));
+        }
+        return sb;
     }
 
     private Integer gameIdFromNumber(String num) {
@@ -119,6 +129,10 @@ public class ChessClient implements NotificationHandler {
                 return "Invalid selection. Game seat may be taken or game doesn't exist.\nRun 'list' to see games or 'create' to make your own.";
             }
 
+            if (currentGameId != null && currentGameId.equals(gid)) {
+                return "Already joined this game.";
+            }
+
             this.currentGameId = gid;
             String color = params[1].toUpperCase();
 
@@ -126,7 +140,9 @@ public class ChessClient implements NotificationHandler {
             server.joinGame(req, authToken);
 
             if (ws == null) ws = new WebSocketFacade(baseURL, authToken, this);
+            waitingForWs = true;
             ws.joinGame(gid, color);
+
 
             this.drawWhiteSide = !color.equals("BLACK");
             synchronized (System.out) {
@@ -156,9 +172,15 @@ public class ChessClient implements NotificationHandler {
             if (gid == null) {
                 return "Invalid selection. Run 'list' and use the game's number.";
             }
+
+            if (currentGameId != null && currentGameId.equals(gid)) {
+                return "Already observing this game.";
+            }
+
             this.currentGameId = gid;
 
             if (ws == null) this.ws = new WebSocketFacade(baseURL, authToken, this);
+            waitingForWs = true;
             ws.observeGame(gid);
 
             this.drawWhiteSide = true;
@@ -224,6 +246,7 @@ public class ChessClient implements NotificationHandler {
             System.out.println("[WebSocket message: " + notification.type() + "]: " + notification.message());
             System.out.printf("[%s] >>> ", ClientState.LOGGED_IN);
         }
+        waitingForWs = false;
     }
 
 }

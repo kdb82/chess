@@ -16,19 +16,15 @@ import java.util.Map;
 
 //need to extend Endpoint for websocket to work properly
 public class WebSocketFacade extends Endpoint {
-    private final String baseUrl;
-    private final String authToken;
     private final NotificationHandler notificationHandler;
     private final Gson gson = new Gson();
     private Session session;
 
     public WebSocketFacade(String url, String authToken, NotificationHandler notificationHandler) throws ResponseException {
-        this.baseUrl = url;
-        this.authToken = authToken;
         this.notificationHandler = notificationHandler;
         try {
             String encoded = URLEncoder.encode(authToken, StandardCharsets.UTF_8);
-            String wsUrl = baseUrl.replaceFirst("http", "ws") + "/ws?authToken=" + encoded;
+            String wsUrl = url.replaceFirst("http", "ws") + "/ws?authToken=" + encoded;
             URI uri = new URI(wsUrl);
 
             WebSocketContainer container = ContainerProvider.getWebSocketContainer();

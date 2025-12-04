@@ -8,26 +8,29 @@ import java.util.Scanner;
 
 public class Repl {
     private final ChessClient client;
-    private final String serverURL;
     private ClientState state;
 
     public Repl(String serverURL) {
-        this.serverURL = serverURL;
         this.client = new ChessClient(serverURL);
         this.state = ClientState.LOGGED_OUT;
     }
 
-    public String getServerURL() {
-        return serverURL;
-    }
+//    public String getServerURL() {
+//        return serverURL;
+//    }
 
-    public void run() {
+    public void run() throws InterruptedException {
         System.out.println("Welcome to Chess Client! Try One of the following commands:");
         help();
 
         Scanner scanner = new Scanner(System.in);
         var result = "";
         while (!result.equals("quitting chess")) {
+
+            while(client.isWaitingForWs()) {
+                Thread.sleep(1);
+            }
+
             printPrompt();
             String line =  scanner.nextLine();
 
