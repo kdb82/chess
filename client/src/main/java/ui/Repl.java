@@ -34,7 +34,7 @@ public class Repl {
             try {
                 result = eval(line);
                 System.out.println(result);
-            } catch (IllegalArgumentException e) {
+            } catch (IllegalArgumentException | ResponseException e) {
                 System.out.println(e.getMessage());
             }
         }
@@ -44,43 +44,44 @@ public class Repl {
         System.out.printf("[%s] >>> ", state);
     }
 
-    private String eval(String line) {
+    private String eval(String line) throws ResponseException {
         if (line == null || line.isBlank()) {
             return "";
         }
         String[] tokens = line.trim().split("\\s+");
         String command = tokens.length > 0 ? tokens[0].toLowerCase() : "help";
         String[] params = Arrays.copyOfRange(tokens, 1, tokens.length);
-        try {
-            switch (command) {
-                case "quit":
-                    client.quit();
-                    return "quitting chess";
-                case "login":
-                    state = ClientState.LOGGED_IN;
-                    return client.login(params);
-                case "register":
-                    state = ClientState.LOGGED_IN;
-                    return client.register(params);
-                case "logout":
-                    state = ClientState.LOGGED_OUT;
-                    return client.logout();
-                case "create":
-                    return client.createGame(params);
-                case "join":
-                    return client.joinGame(params);
-                case "observe":
-                    return client.observeGame(params);
-                case "list":
-                    return client.listGames();
-                case "leave":
-                    return client.leave();
-                default:
-                    help();
+
+        String result;
+        switch (command) {
+            case "quit":
+                client.quit();
+                return "quitting chess";
+            case "login":
+                result = client.login(params);
+                state = ClientState.LOGGED_IN;
+                return result;
+            case "register":
+                result = client.register(params);
+                state = ClientState.LOGGED_IN;
+                return result;
+            case "logout":
+                result = client.logout();
+                state = ClientState.LOGGED_OUT;
+                return result;
+            case "create":
+                return client.createGame(params);
+            case "join":
+                return client.joinGame(params);
+            case "observe":
+                return client.observeGame(params);
+            case "list":
+                return client.listGames();
+            case "leave":
+                return client.leave();
+            default:
+                help();
             }
-        } catch (ResponseException e) {
-            throw new RuntimeException(e.getMessage());
-        }
         return "";
     }
 

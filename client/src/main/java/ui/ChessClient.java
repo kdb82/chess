@@ -34,49 +34,37 @@ public class ChessClient implements NotificationHandler {
 
 
     public String login(String[] params) throws ResponseException {
-        if (params.length != 2) {return "USAGE: login <username> <password>";}
+        if (params.length != 2) {throw new IllegalArgumentException("USAGE: login <username> <password>");}
         var request = new LoginRequest(params[0], params[1]);
-        try {
-            LoginResult result = server.login(request);
-            this.authToken = result.authToken();
-            return "Logged in as " + params[0];
-        } catch (ResponseException e) {
-            return "Login failed: " + e.getMessage();
-        }
+        LoginResult result = server.login(request);
+        this.authToken = result.authToken();
+        return "Logged in as " + params[0];
     }
 
-    public String register(String[] params) {
-        if (params.length != 3) return "USAGE:  register <username> <password> <email>";
+    public String register(String[] params) throws ResponseException {
+        if (params.length != 3) throw new IllegalArgumentException("USAGE:  register <username> <password> <email>");
         var request = new RegisterRequest(params[0], params[1], params[2]);
-        try {
-            RegisterResult result = server.register(request);
-            this.authToken = result.authToken();
-            return "Registered and logged in as " + params[0];
-        } catch (ResponseException e) {
-            return "Register failed: " + e.getMessage();
-        }
+        RegisterResult result = server.register(request);
+        this.authToken = result.authToken();
+        return "Registered and logged in as " + params[0];
     }
 
-    public String logout() {
-        try {
-            if (authToken == null) return "Not logged in.";
-            var req = new LogoutRequest(authToken);
-            server.logout(req);
-            this.authToken = null;
-            return "Logged out.";
-        } catch (ResponseException e) {
-            return "Logout failed: " + e.getMessage();
-        }
+    public String logout() throws ResponseException {
+        if (authToken == null) throw new IllegalArgumentException("Not logged in.");
+        var req = new LogoutRequest(authToken);
+        server.logout(req);
+        this.authToken = null;
+        return "Logged out.";
     }
 
     public String createGame(String[] params) {
         try {
-            if (authToken == null) return "Please login first.";
-            if (params.length < 1) return "Usage: create <NAME>";
-            var name = String.join(" ", params);
-            var req = new CreateGameRequest(name);
-            CreateGameResult res = server.createGame(req, authToken);
-            return "Created game " + res.gameID() + " named \"" + name + "\"";
+        if (authToken == null) return "Please login first.";
+        if (params.length < 1) return "Usage: create <NAME>";
+        var name = String.join(" ", params);
+        var req = new CreateGameRequest(name);
+        CreateGameResult res = server.createGame(req, authToken);
+        return "Created game " + res.gameID() + " named \"" + name + "\"";
         } catch (ResponseException e) {
             return "Create failed: " + e.getMessage();
         }
