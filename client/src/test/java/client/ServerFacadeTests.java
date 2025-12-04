@@ -108,7 +108,7 @@ public class ServerFacadeTests {
     }
 
     @Test
-    public void createGameNegative_InvalidAuth() throws Exception {
+    public void createGameNegative_InvalidAuth() {
         var gameReq = new CreateGameRequest("NoAuth Game");
         assertThrows(ResponseException.class,
                 () -> facade.createGame(gameReq, "bad-token"));
