@@ -329,7 +329,8 @@ public class ChessClient implements NotificationHandler {
         }
 
         try {
-            ws.resign(currentGameId, current_user);
+            ws.resign(currentGameId, current_user, authToken);
+            gameOver = true;
             return "You resigned. Game is over. Type leave to leave game.";
         } catch (ResponseException e) {
             return "Resign failed: " + e.getMessage();
@@ -343,6 +344,8 @@ public class ChessClient implements NotificationHandler {
         }
         ws.leaveGame(currentGameID(), isPlayer, current_user, authToken);
         currentGameId = null;
+        isPlayer = false;
+        currentState = null;
         System.out.print(EscapeSequences.ERASE_SCREEN);
         return "Left the game.";
     }
@@ -391,8 +394,9 @@ public class ChessClient implements NotificationHandler {
                 this.currentState = state;
                 DrawBoard.redraw(state, drawWhiteSide);
             } else {
+                String msg = notification.message().toLowerCase();
                 System.out.println("[WebSocket message: " + notification.type() + "]: " + notification.message());
-                if (notification.message().contains("checkmate")) {
+                if (msg.contains("checkmate") || msg.contains("stalemate") || msg.contains("resigned")) {
                     System.out.println("GAME OVER (type leave to leave game)");
                     gameOver = true;
                 }

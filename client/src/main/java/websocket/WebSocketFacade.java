@@ -77,7 +77,7 @@ public class WebSocketFacade extends Endpoint {
 
     public void joinGame(int gameId, String color, String current_user) throws ResponseException {
         Map<String, Object> message = new HashMap<>();
-        message.put("type", "JOIN");
+        message.put("type", "CONNECT");
         message.put("gameId", gameId);
         message.put("color", color);
         message.put("current_user", current_user);
@@ -85,7 +85,7 @@ public class WebSocketFacade extends Endpoint {
     }
 
     public void observeGame(int gameId, String current_user) throws ResponseException {
-        sendJson(Map.of("type", "OBSERVE", "gameId", gameId, "current_user", current_user));
+        sendJson(Map.of("type", "CONNECT", "gameId", gameId, "current_user", current_user));
     }
 
     public void makeMove(int gameId, String from, String to, boolean promotion, String authToken) throws ResponseException {
@@ -105,8 +105,8 @@ public class WebSocketFacade extends Endpoint {
         sendJson(Map.of("type", "LEAVE", "gameId", gameId,  "isPlayer", isPlayer, "current_user", current_user,  "authToken", authToken));
     }
 
-    public void resign(int gameId, String current_user) throws ResponseException {
-        sendJson(Map.of("type", "RESIGN", "gameId", gameId,  "current_user", current_user));
+    public void resign(int gameId, String current_user, String authToken) throws ResponseException {
+        sendJson(Map.of("type", "RESIGN", "gameId", gameId,  "current_user", current_user,   "authToken", authToken));
     }
 
 

@@ -53,11 +53,11 @@ public class WebSocketHandler implements WsConnectHandler, WsMessageHandler, WsC
 
                     watchers.computeIfAbsent(gameId, k -> ConcurrentHashMap.newKeySet()).add(session);
 
-//                    sendTo(session, new Notification(Notification.Type.JOIN,
+//                    sendTo(session, new Notification(Notification.Type.LOAD_GAME,
 //                            (color != null ? "Player joined as " + color : "Joined as observer") + " (gameId " + gameId + ")"));
 
                     broadcastToGame(gameId, session,
-                            new Notification(Notification.Type.JOIN, current_user + " joined game " +
+                            new Notification(Notification.Type.NOTIFICATION, current_user + " joined game " +
                                     (color != null ? "(" + color + ")" : "")));
                     break;
                 }
@@ -68,7 +68,7 @@ public class WebSocketHandler implements WsConnectHandler, WsMessageHandler, WsC
                     watchers.computeIfAbsent(gameId, k -> ConcurrentHashMap.newKeySet()).add(session);
 
 //                    sendTo(session, new Notification(Notification.Type.JOIN, "Observing game " + gameId));
-                    broadcastToGame(gameId, session, new Notification(Notification.Type.JOIN, current_user + " joined game as observer."));
+                    broadcastToGame(gameId, session, new Notification(Notification.Type.CONNECT, current_user + " joined game as observer."));
                     break;
                 }
 
@@ -119,6 +119,7 @@ public class WebSocketHandler implements WsConnectHandler, WsMessageHandler, WsC
                 case "RESIGN": {
                     int gameId = ((Number) msg.get("gameId")).intValue();
                     String current_user = (String) msg.get("current_user");
+                    String authToken = (String) msg.get("authToken");
 
                     try {
                         gameService.resignGame(gameId, current_user);
