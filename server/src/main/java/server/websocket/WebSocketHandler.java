@@ -30,7 +30,7 @@ public class WebSocketHandler implements WsConnectHandler, WsMessageHandler, WsC
         ctx.enableAutomaticPings();
         Session session = ctx.session;
         connections.add(session);
-        sendTo(session, new Notification(Notification.Type.JOIN, "Connected"));
+        sendTo(session, new Notification(Notification.Type.CONNECT, "Connected"));
     }
 
     @Override
@@ -96,12 +96,12 @@ public class WebSocketHandler implements WsConnectHandler, WsMessageHandler, WsC
 
                         if (result.moveNotification() != null) {
                             broadcastToGame(gameId, session,
-                                    new Notification(Notification.Type.MOVE, result.moveNotification()));
+                                    new Notification(Notification.Type.NOTIFICATION, result.moveNotification()));
                         }
 
                         if (result.statusNotification() != null) {
                             broadcastToGame(gameId, null,
-                                    new Notification(Notification.Type.MOVE, result.statusNotification()));
+                                    new Notification(Notification.Type.NOTIFICATION, result.statusNotification()));
                         }
 
                     } catch (DataAccessException e) {
@@ -129,10 +129,10 @@ public class WebSocketHandler implements WsConnectHandler, WsMessageHandler, WsC
 //                    sendTo(session, new Notification(Notification.Type.LEAVE, "Left game " + gameId));
                     if(isPlayer) {
                         broadcastToGame(gameId, session,
-                                new Notification(Notification.Type.LEAVE, current_user + " (player) left game " + gameId));
+                                new Notification(Notification.Type.NOTIFICATION, current_user + " (player) left game " + gameId));
                     } else {
                         broadcastToGame(gameId, session,
-                                new Notification(Notification.Type.LEAVE, current_user + " (observer) left game " + gameId));
+                                new Notification(Notification.Type.NOTIFICATION, current_user + " (observer) left game " + gameId));
                     }
 
                     break;
