@@ -167,8 +167,11 @@ public class ChessClient implements NotificationHandler {
 
 
             this.drawWhiteSide = !color.equals("BLACK");
+            if (currentState == null) {
+                currentState = DefaultGameState.loadDefaultGameState();
+            }
             synchronized (System.out) {
-                DrawBoard.drawInitial(this.drawWhiteSide);
+                DrawBoard.redraw(currentState, drawWhiteSide);
             }
 
             String displayName = "#" + gid;
@@ -207,8 +210,12 @@ public class ChessClient implements NotificationHandler {
             ws.observeGame(gid, current_user);
 
             this.drawWhiteSide = true;
+
+            if (currentState == null) {
+                currentState = DefaultGameState.loadDefaultGameState();
+            }
             synchronized (System.out) {
-                DrawBoard.drawInitial(true);
+                DrawBoard.redraw(currentState, drawWhiteSide);
             }
 
             String displayName = "#" + gid;

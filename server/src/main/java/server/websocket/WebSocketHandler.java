@@ -125,7 +125,7 @@ public class WebSocketHandler implements WsConnectHandler, WsMessageHandler, WsC
 
                         broadcastToGame(gameId, null,
                                 new Notification(Notification.Type.NOTIFICATION,
-                                        current_user + " resigned. Game over."));
+                                        current_user + " resigned. Game over. type leave to leave game."));
                     } catch (Exception e) {
                         sendTo(session, new Notification(
                                 Notification.Type.ERROR,
