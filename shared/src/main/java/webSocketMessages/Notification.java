@@ -8,7 +8,8 @@ public record Notification(Type type, String message) {
         LEAVE,
         MOVE,
         OBSERVE,
-        Error
+        LOAD_GAME,
+        ERROR
     }
 
     @SuppressWarnings("NullableProblems")

@@ -34,9 +34,11 @@ public class GameStateMapper {
             var pos = new ChessPosition(pieceDTO.row(), pieceDTO.col());
             var piece = new ChessPiece(pieceDTO.color(), pieceDTO.type(), pos);
             board.addPiece(pos, piece);
-            if (piece.getPieceType() == ChessPiece.PieceType.KING && piece.getTeamColor() == ChessGame.TeamColor.WHITE) {
-                game.setWhiteKing(piece);
-            } else { game.setBlackKing(piece); }
+            if (piece.getPieceType() == ChessPiece.PieceType.KING) {
+                if (piece.getTeamColor() == ChessGame.TeamColor.WHITE) {
+                    game.setWhiteKing(piece);
+                } else { game.setBlackKing(piece); }
+            }
         }
         game.setBoard(board);
         game.setTeamTurn(gameStateDTO.turn());

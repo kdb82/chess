@@ -1,7 +1,6 @@
 package ui;
 
-import chess.ChessMove;
-import chess.ChessPosition;
+import com.google.gson.Gson;
 import exception.ResponseException;
 import client.ServerFacade;
 import requests.*;
@@ -9,7 +8,7 @@ import results.*;
 import webSocketMessages.Notification;
 import websocket.NotificationHandler;
 import websocket.WebSocketFacade;
-
+import serialization.GameStateDTO;
 
 
 public class ChessClient implements NotificationHandler {
@@ -23,6 +22,7 @@ public class ChessClient implements NotificationHandler {
     private String authToken;
     private boolean isPlayer;
     private String current_user;
+    private final Gson gson = new Gson();
 //    private volatile boolean waitingForWs = false;
 
     public ChessClient(String serverUrl) {
@@ -136,9 +136,10 @@ public class ChessClient implements NotificationHandler {
 
             if (currentGameId != null && currentGameId.equals(gid)) {
                 return "Already joined this game.";
-            } else if (currentGameId != null && !currentGameId.equals(gid) && ws != null) {
-                return "must leave current game first";
-            }
+            } else //noinspection ConstantValue
+                if (currentGameId != null && !currentGameId.equals(gid) && ws != null) {
+                    return "must leave current game first";
+                }
 
             this.currentGameId = gid;
             String color = params[1].toUpperCase();
@@ -228,9 +229,8 @@ public class ChessClient implements NotificationHandler {
         char to_num = to_sq.charAt(1);
         boolean promotion = to_num == '1' || to_num == '8';
 
-
         ws.makeMove(currentGameId, from_sq, to_sq, promotion);
-        return null;
+        return "Attempting move from " + from_sq + " to " + to_sq;
     }
 
     public String highlight(String[] params) {
@@ -259,7 +259,7 @@ public class ChessClient implements NotificationHandler {
     }
 
     public boolean quit() throws ResponseException {
-        if(currentGameId != null) {
+        if (currentGameId != null) {
             System.out.print("Must leave the game before quitting app...");
             return false;
         }
@@ -296,11 +296,18 @@ public class ChessClient implements NotificationHandler {
     @Override
     public void notify(Notification notification) {
         synchronized (System.out) {
-            System.out.println();
-            System.out.println("[WebSocket message: " + notification.type() + "]: " + notification.message());
-            System.out.printf("[%s] >>> ", ClientState.LOGGED_IN);
-        }
-//        waitingForWs = false;
-    }
 
+            switch (notification.type()) {
+                case LOAD_GAME -> {
+                    GameStateDTO state = gson.fromJson(notification.message(), GameStateDTO.class);
+                    DrawBoard.redraw(state, drawWhiteSide);
+                }
+                default -> {
+                    System.out.println("[WebSocket message: " + notification.type() + "]: " + notification.message());
+                }
+            }
+            System.out.printf("[%s] >>> ", ClientState.LOGGED_IN);
+//        waitingForWs = false;
+        }
+    }
 }

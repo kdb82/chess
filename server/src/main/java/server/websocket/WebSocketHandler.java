@@ -1,8 +1,16 @@
 package server.websocket;
 
+import chess.ChessGame;
+import chess.ChessMove;
+import chess.ChessPiece;
+import chess.ChessPosition;
 import com.google.gson.Gson;
+import dataaccess.DataAccessException;
+import dataaccess.GameDao;
 import io.javalin.websocket.*;
 import org.eclipse.jetty.websocket.api.Session;
+import serialization.GameStateDTO;
+import serialization.GameStateMapper;
 import webSocketMessages.Notification;
 
 import java.util.Map;
@@ -14,6 +22,11 @@ public class WebSocketHandler implements WsConnectHandler, WsMessageHandler, WsC
     private final ConnectionManager connections = new ConnectionManager();
     private static final Map<Integer, Set<Session>> watchers = new ConcurrentHashMap<>();
 
+    private final GameDao gameDao;
+
+    public WebSocketHandler(GameDao gameDao) {
+        this.gameDao = gameDao;
+    }
 
     @Override
     public void handleConnect(WsConnectContext ctx) {
@@ -32,7 +45,7 @@ public class WebSocketHandler implements WsConnectHandler, WsMessageHandler, WsC
             var msg = gson.fromJson(ctx.message(), Map.class);
             String type = (String) msg.get("type");
             if (type == null) {
-                sendTo(session, new Notification(Notification.Type.Error, "missing type"));
+                sendTo(session, new Notification(Notification.Type.ERROR, "missing type"));
                 return;
             }
 
@@ -67,9 +80,33 @@ public class WebSocketHandler implements WsConnectHandler, WsMessageHandler, WsC
                     int gameId = ((Number)  msg.get("gameId")).intValue();
                     String from = (String) msg.get("from");
                     String to = (String) msg.get("to");
-                    Boolean promotion = (Boolean) msg.get("promotion");
+                    boolean promotion = Boolean.TRUE.equals(msg.get("promotion"));
 
+                    try {
+                        ChessGame game = gameDao.loadGameState(gameId);
+                        ChessPosition start = parseSquare(session, from);
+                        ChessPosition end = parseSquare(session, to);
 
+                        ChessPiece.PieceType promoPiece = null;
+                        if (promotion) {
+                            promoPiece = ChessPiece.PieceType.QUEEN;
+                        }
+                        ChessMove move = new ChessMove(start, end, promoPiece);
+                        game.makeMove(move);
+
+                        gameDao.saveGameState(gameId, game);
+                        GameStateDTO dto = GameStateMapper.gameToDTO(game);
+
+                        String json = gson.toJson(dto);
+                        broadcastToGame(gameId, session, new Notification(Notification.Type.LOAD_GAME, json));
+
+                    } catch (DataAccessException e) {
+                        sendTo(session, new Notification(Notification.Type.ERROR,
+                                "Database error: " + e.getMessage()));
+                    } catch (Exception e) {
+                        sendTo(session, new Notification(Notification.Type.ERROR,
+                                "Invalid move: " + e.getMessage()));
+                    }
                     break;
                 }
 
@@ -95,11 +132,11 @@ public class WebSocketHandler implements WsConnectHandler, WsMessageHandler, WsC
                     break;
                 }
                 default: {
-                    sendTo(session, new Notification(Notification.Type.Error, "Unknown type " + type));
+                    sendTo(session, new Notification(Notification.Type.ERROR, "Unknown type " + type));
                 }
             }
         } catch (Exception e) {
-            sendTo(ctx.session,  new Notification(Notification.Type.Error, e.getMessage()));
+            sendTo(ctx.session,  new Notification(Notification.Type.ERROR, e.getMessage()));
         }
     }
 
@@ -136,6 +173,23 @@ public class WebSocketHandler implements WsConnectHandler, WsMessageHandler, WsC
             }
         }
     }
+    private ChessPosition parseSquare(Session s, String sq) {
+        if (sq == null || sq.length() != 2) {
+            sendTo(s, new Notification(Notification.Type.ERROR, "invalid square"));
+        }
+        char letter = Character.toLowerCase(sq != null ? sq.charAt(0) : 0);
+        char rank = sq != null ? sq.charAt(1) : 0;
+
+        int col = letter - 'a' + 1;
+        int row = rank - '0';
+
+        if (col < 1 || col > 8 || row < 1 || row > 8) {
+            sendTo(s, new Notification(Notification.Type.ERROR, "invalid square"));
+        }
+
+        return new ChessPosition(row, col);
+    }
+
 
 
 }

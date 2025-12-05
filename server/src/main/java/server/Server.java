@@ -16,7 +16,6 @@ public class Server {
 
     public Server() {
         Gson serializer = new Gson();
-        WebSocketHandler webSocketHandler = new WebSocketHandler();
 
         app = Javalin.create(config -> {
             config.staticFiles.add("web");
@@ -49,6 +48,8 @@ public class Server {
 
         ClearService clearService = new ClearService(userDao, authDao, gameDao);
         ClearHandler clearHandler = new ClearHandler(clearService);
+
+        WebSocketHandler webSocketHandler = new WebSocketHandler(gameDao);
 
         registerEndpoints(userHandler, gameHandler, clearHandler, webSocketHandler);
 
