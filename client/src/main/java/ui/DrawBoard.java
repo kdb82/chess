@@ -6,7 +6,6 @@ import serialization.GamePieceDTO;
 import serialization.GameStateDTO;
 
 public final class DrawBoard {
-    private GameStateDTO gameState;
 
     public static void drawInitial(boolean drawWhiteSide) {
         System.out.print(EscapeSequences.ERASE_SCREEN);

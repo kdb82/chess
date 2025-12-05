@@ -10,6 +10,8 @@ import websocket.NotificationHandler;
 import websocket.WebSocketFacade;
 import serialization.GameStateDTO;
 
+import java.util.Objects;
+
 
 public class ChessClient implements NotificationHandler {
     private final String baseURL;
@@ -69,7 +71,7 @@ public class ChessClient implements NotificationHandler {
             if (params.length < 1) return "Usage: create <NAME>";
             var name = String.join(" ", params);
             var req = new CreateGameRequest(name);
-            CreateGameResult res = server.createGame(req, authToken);
+            server.createGame(req, authToken);
             return "Created game" + " named \"" + name + "\"";
         } catch (ResponseException e) {
             return "Create failed: " + e.getMessage();
@@ -216,7 +218,7 @@ public class ChessClient implements NotificationHandler {
     public String move(String[] params) throws ResponseException {
         if (params.length != 2) return "Usage: move <FROM_SQ> <TO_SQ>";
         if (currentGameId == null || ws == null) {
-            return "You must join or observe a game before moving.";
+            return "You must join a game before moving.";
         }
         if (!isValidSquare(params[0]) || !isValidSquare(params[1])) {
             return "Invalid move.";
@@ -297,14 +299,11 @@ public class ChessClient implements NotificationHandler {
     public void notify(Notification notification) {
         synchronized (System.out) {
 
-            switch (notification.type()) {
-                case LOAD_GAME -> {
-                    GameStateDTO state = gson.fromJson(notification.message(), GameStateDTO.class);
-                    DrawBoard.redraw(state, drawWhiteSide);
-                }
-                default -> {
-                    System.out.println("[WebSocket message: " + notification.type() + "]: " + notification.message());
-                }
+            if (Objects.requireNonNull(notification.type()) == Notification.Type.LOAD_GAME) {
+                GameStateDTO state = gson.fromJson(notification.message(), GameStateDTO.class);
+                DrawBoard.redraw(state, drawWhiteSide);
+            } else {
+                System.out.println("[WebSocket message: " + notification.type() + "]: " + notification.message());
             }
             System.out.printf("[%s] >>> ", ClientState.LOGGED_IN);
 //        waitingForWs = false;

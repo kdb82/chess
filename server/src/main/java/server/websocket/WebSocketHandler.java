@@ -98,7 +98,10 @@ public class WebSocketHandler implements WsConnectHandler, WsMessageHandler, WsC
                         GameStateDTO dto = GameStateMapper.gameToDTO(game);
 
                         String json = gson.toJson(dto);
-                        broadcastToGame(gameId, session, new Notification(Notification.Type.LOAD_GAME, json));
+                        var update = new Notification(Notification.Type.LOAD_GAME, json);
+
+                        sendTo(session, update);
+                        broadcastToGame(gameId, session, update);
 
                     } catch (DataAccessException e) {
                         sendTo(session, new Notification(Notification.Type.ERROR,
@@ -175,16 +178,16 @@ public class WebSocketHandler implements WsConnectHandler, WsMessageHandler, WsC
     }
     private ChessPosition parseSquare(Session s, String sq) {
         if (sq == null || sq.length() != 2) {
-            sendTo(s, new Notification(Notification.Type.ERROR, "invalid square"));
+            throw new IllegalArgumentException("invalid square: " + sq);
         }
-        char letter = Character.toLowerCase(sq != null ? sq.charAt(0) : 0);
-        char rank = sq != null ? sq.charAt(1) : 0;
+        char letter = Character.toLowerCase(sq.charAt(0));
+        char rank = sq.charAt(1);
 
         int col = letter - 'a' + 1;
         int row = rank - '0';
 
         if (col < 1 || col > 8 || row < 1 || row > 8) {
-            sendTo(s, new Notification(Notification.Type.ERROR, "invalid square"));
+            throw new IllegalArgumentException("invalid square: " + sq);
         }
 
         return new ChessPosition(row, col);
