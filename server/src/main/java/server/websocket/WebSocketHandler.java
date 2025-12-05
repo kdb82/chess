@@ -40,6 +40,7 @@ public class WebSocketHandler implements WsConnectHandler, WsMessageHandler, WsC
                 case "JOIN": {
                     int gameId = ((Number)  msg.get("gameId")).intValue();
                     String color = (String) msg.get("color");
+                    String current_user = (String) msg.get("current_user");
 
                     watchers.computeIfAbsent(gameId, k -> ConcurrentHashMap.newKeySet()).add(session);
 
@@ -47,17 +48,18 @@ public class WebSocketHandler implements WsConnectHandler, WsMessageHandler, WsC
 //                            (color != null ? "Player joined as " + color : "Joined as observer") + " (gameId " + gameId + ")"));
 
                     broadcastToGame(gameId, session,
-                            new Notification(Notification.Type.JOIN, "Player joined game " + gameId +
+                            new Notification(Notification.Type.JOIN, current_user + " joined game " + gameId +
                                     (color != null ? " (" + color + ")" : "")));
                     break;
                 }
 
                 case "OBSERVE": {
                     int gameId = ((Number)  msg.get("gameId")).intValue();
+                    var current_user = (String) msg.get("current_user");
                     watchers.computeIfAbsent(gameId, k -> ConcurrentHashMap.newKeySet()).add(session);
 
 //                    sendTo(session, new Notification(Notification.Type.JOIN, "Observing game " + gameId));
-                    broadcastToGame(gameId, session, new Notification(Notification.Type.JOIN, "Observer joined game " + gameId));
+                    broadcastToGame(gameId, session, new Notification(Notification.Type.JOIN, current_user + " joined game " + gameId));
                     break;
                 }
 

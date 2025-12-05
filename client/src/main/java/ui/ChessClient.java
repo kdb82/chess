@@ -20,6 +20,7 @@ public class ChessClient implements NotificationHandler {
 
     private String authToken;
     private boolean isPlayer;
+    private String current_user;
 //    private volatile boolean waitingForWs = false;
 
     public ChessClient(String serverUrl) {
@@ -38,6 +39,7 @@ public class ChessClient implements NotificationHandler {
         var request = new LoginRequest(params[0], params[1]);
         LoginResult result = server.login(request);
         this.authToken = result.authToken();
+        this.current_user = result.username();
         return "Logged in as " + params[0];
     }
 
@@ -46,6 +48,7 @@ public class ChessClient implements NotificationHandler {
         var request = new RegisterRequest(params[0], params[1], params[2]);
         RegisterResult result = server.register(request);
         this.authToken = result.authToken();
+        this.current_user = result.username();
         return "Registered and logged in as " + params[0];
     }
 
@@ -54,6 +57,7 @@ public class ChessClient implements NotificationHandler {
         var req = new LogoutRequest(authToken);
         server.logout(req);
         this.authToken = null;
+        this.current_user = null;
         return "Logged out.";
     }
 
@@ -143,7 +147,7 @@ public class ChessClient implements NotificationHandler {
             if (ws == null) ws = new WebSocketFacade(baseURL, authToken, this);
 //            waitingForWs = true;
             isPlayer = true;
-            ws.joinGame(gid, color);
+            ws.joinGame(gid, color, current_user);
 
 
             this.drawWhiteSide = !color.equals("BLACK");
@@ -184,7 +188,7 @@ public class ChessClient implements NotificationHandler {
             if (ws == null) this.ws = new WebSocketFacade(baseURL, authToken, this);
 //            waitingForWs = true;
             isPlayer = false;
-            ws.observeGame(gid);
+            ws.observeGame(gid, current_user);
 
             this.drawWhiteSide = true;
             synchronized (System.out) {
@@ -207,6 +211,24 @@ public class ChessClient implements NotificationHandler {
 
     //NEEDS IMPLEMENTATION FOR GAMEPLAY
     public String move(String[] params) {
+        if (params.length != 2) return "Usage: move <FROM_SQ> <TO_SQ?>";
+        var from_sq = params[0].toUpperCase();
+        var to_sq = params[1].toUpperCase();
+        return null;
+    }
+
+    public String highlight(String[] params) {
+        if (params.length != 1) return "Usage: highlight <SQUARE TO HIGHLIGHT>";
+        String sq = params[0];
+
+        return null;
+    }
+
+    public void redraw(String[] params) {
+
+    }
+
+    public String resign(String[] params) {
         return null;
     }
 
@@ -216,12 +238,13 @@ public class ChessClient implements NotificationHandler {
         }
         ws.leaveGame(currentGameID(), isPlayer);
         currentGameId = null;
+        System.out.print(EscapeSequences.ERASE_SCREEN);
         return "Left the game.";
     }
 
     public boolean quit() throws ResponseException {
         if(currentGameId != null) {
-            System.out.print("Must leave the game before quitting...");
+            System.out.print("Must leave the game before quitting app...");
             return false;
         }
         try {
@@ -231,6 +254,7 @@ public class ChessClient implements NotificationHandler {
             }
             authToken = null;
             currentGameId = null;
+            current_user = null;
             System.out.println("Goodbye!");
             return true;
         } catch (Exception e) {

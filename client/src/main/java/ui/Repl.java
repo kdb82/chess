@@ -9,6 +9,7 @@ import java.util.Scanner;
 public class Repl {
     private final ChessClient client;
     private ClientState state;
+    private String current_user;
 
     public Repl(String serverURL) {
         this.client = new ChessClient(serverURL);
@@ -109,6 +110,15 @@ public class Repl {
             observe <ID>: watch a game
             """;
             System.out.println(msg);
+        } else if (state == ClientState.IN_GAME) {
+            String msg = """
+            help: display all available commands
+            redraw: Redraw the chess board
+            leave: leave current game
+            move <FROM_SQ> <TO_SQ>: make move
+            resign: resign game
+            highlight <SQUARE TO HIGHLIGHT>: highlights all legal moves for piece on given square
+            """;
         } else {
             System.out.println("Implement functionality for gameplay commands");
         }

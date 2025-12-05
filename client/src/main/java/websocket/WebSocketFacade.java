@@ -75,16 +75,17 @@ public class WebSocketFacade extends Endpoint {
         } catch (IOException ignored) {}
     }
 
-    public void joinGame(int gameId, String color) throws ResponseException {
+    public void joinGame(int gameId, String color, String current_user) throws ResponseException {
         Map<String, Object> message = new HashMap<>();
         message.put("type", "JOIN");
         message.put("gameId", gameId);
         message.put("color", color);
+        message.put("current_user", current_user);
         sendJson(message);
     }
 
-    public void observeGame(int gameId) throws ResponseException {
-        sendJson(Map.of("type", "OBSERVE", "gameId", gameId));
+    public void observeGame(int gameId, String current_user) throws ResponseException {
+        sendJson(Map.of("type", "OBSERVE", "gameId", gameId, "current_user", current_user));
     }
 
     public void makeMove(int gameId, String from, String to, String promotion) throws ResponseException {
