@@ -212,6 +212,7 @@ public class GameService {
         int rank  = pos.getRow();
         return "" + file + rank;
     }
+
     public void resignGame(int gameId, String username)
             throws DataAccessException, BadRequestException {
 
@@ -229,18 +230,14 @@ public class GameService {
 
         String result;
         if (username.equals(white)) {
-            // white resigns → black wins
-            result = "BLACK_WON_RESIGN";
+            result = "BLACK";
         } else if (username.equals(black)) {
-            // black resigns → white wins
-            result = "WHITE_WON_RESIGN";
+            result = "WHITE";
         } else {
-            // observers can’t resign the game
             throw new BadRequestException("Error: Only a player can resign");
         }
 
-        // mark game as over in DB
-        gameDao.updateGameStatus(gameId, "OVER", result);
+        gameDao.updateGameStatus(gameId, "FINISHED", result);
     }
 
 

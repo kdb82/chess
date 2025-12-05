@@ -117,9 +117,23 @@ public class WebSocketHandler implements WsConnectHandler, WsMessageHandler, WsC
                 }
 
                 case "RESIGN": {
-                    //implement
+                    int gameId = ((Number) msg.get("gameId")).intValue();
+                    String current_user = (String) msg.get("current_user");
+
+                    try {
+                        gameService.resignGame(gameId, current_user);
+
+                        broadcastToGame(gameId, null,
+                                new Notification(Notification.Type.NOTIFICATION,
+                                        current_user + " resigned. Game over."));
+                    } catch (Exception e) {
+                        sendTo(session, new Notification(
+                                Notification.Type.ERROR,
+                                "Error: " + e.getMessage()));
+                    }
                     break;
                 }
+
 
                 case "LEAVE": {
                     int gameId = ((Number) msg.get("gameId")).intValue();

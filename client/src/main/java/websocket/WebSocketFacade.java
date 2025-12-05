@@ -105,8 +105,8 @@ public class WebSocketFacade extends Endpoint {
         sendJson(Map.of("type", "LEAVE", "gameId", gameId,  "isPlayer", isPlayer, "current_user", current_user,  "authToken", authToken));
     }
 
-    public void resign(int gameId) throws ResponseException {
-        sendJson(Map.of("type", "RESIGN", "gameId", gameId));
+    public void resign(int gameId, String current_user) throws ResponseException {
+        sendJson(Map.of("type", "RESIGN", "gameId", gameId,  "current_user", current_user));
     }
 
 

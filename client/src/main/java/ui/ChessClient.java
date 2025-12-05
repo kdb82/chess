@@ -307,8 +307,28 @@ public class ChessClient implements NotificationHandler {
 
 
     public String resign(String[] params) {
-        return null;
+        if (currentGameId == null) {
+            return "You are not currently in a game.";
+        }
+        if (!isPlayer) {
+            return "Observers cannot resign the game.";
+        }
+
+        System.out.print("Are you sure you want to resign? (yes/no): ");
+        String answer = new java.util.Scanner(System.in).nextLine().trim().toLowerCase();
+
+        if (!answer.startsWith("y")) {
+            return "Resign cancelled.";
+        }
+
+        try {
+            ws.resign(currentGameId, current_user);
+            return "You resigned. Game is over. Type leave to leave game.";
+        } catch (ResponseException e) {
+            return "Resign failed: " + e.getMessage();
+        }
     }
+
 
     public String leave() throws ResponseException {
         if (ws == null || currentGameId == null) {
