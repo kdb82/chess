@@ -57,7 +57,7 @@ public class WebSocketHandler implements WsConnectHandler, WsMessageHandler, WsC
 //                            (color != null ? "Player joined as " + color : "Joined as observer") + " (gameId " + gameId + ")"));
 
                     broadcastToGame(gameId, session,
-                            new Notification(Notification.Type.JOIN, current_user + " joined game " + gameId +
+                            new Notification(Notification.Type.JOIN, current_user + " joined game " +
                                     (color != null ? " (" + color + ")" : "")));
                     break;
                 }
@@ -68,7 +68,7 @@ public class WebSocketHandler implements WsConnectHandler, WsMessageHandler, WsC
                     watchers.computeIfAbsent(gameId, k -> ConcurrentHashMap.newKeySet()).add(session);
 
 //                    sendTo(session, new Notification(Notification.Type.JOIN, "Observing game " + gameId));
-                    broadcastToGame(gameId, session, new Notification(Notification.Type.JOIN, current_user + " joined game " + gameId));
+                    broadcastToGame(gameId, session, new Notification(Notification.Type.JOIN, current_user + " joined game as observer."));
                     break;
                 }
 
@@ -125,14 +125,24 @@ public class WebSocketHandler implements WsConnectHandler, WsMessageHandler, WsC
                     int gameId = ((Number) msg.get("gameId")).intValue();
                     boolean isPlayer = (boolean) msg.get("isPlayer");
                     String current_user = (String) msg.get("current_user");
+                    String authToken = (String) msg.get("authToken");
                     removeWatcher(gameId, session);
 //                    sendTo(session, new Notification(Notification.Type.LEAVE, "Left game " + gameId));
+                    if (isPlayer) {
+                        try {
+                            gameService.leaveGame(gameId, authToken);
+                        } catch (Exception e) {
+                            sendTo(session, new Notification(
+                                    Notification.Type.ERROR,
+                                    "Error: " + e.getMessage()));
+                        }
+                    }
                     if(isPlayer) {
                         broadcastToGame(gameId, session,
-                                new Notification(Notification.Type.NOTIFICATION, current_user + " (player) left game " + gameId));
+                                new Notification(Notification.Type.NOTIFICATION, current_user + " (player) left game."));
                     } else {
                         broadcastToGame(gameId, session,
-                                new Notification(Notification.Type.NOTIFICATION, current_user + " (observer) left game " + gameId));
+                                new Notification(Notification.Type.NOTIFICATION, current_user + " (observer) left game."));
                     }
 
                     break;

@@ -23,6 +23,6 @@ public interface GameDao {
         return new ChessGame();
     }
     default void updateGameStatus(int gameId, String status, String result) throws DataAccessException {
-
     }
+    default void removePlayerSeat(int gameId, String Color) throws DataAccessException {}
 }

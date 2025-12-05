@@ -263,8 +263,20 @@ public class SqlGameDao implements GameDao {
                 throw new DataAccessException("Error: game not found");
             }
         } catch (SQLException e) {
-            throw new DataAccessException("Error: couldn't update game status", e);
+            throw new DataAccessException("Error: could not update status", e);
         }
     }
+    @Override
+    public void removePlayerSeat(int gameId, String color) throws DataAccessException {
+        final String sql = "DELETE FROM game_players WHERE game_id = ? AND color = ?";
+        try (var conn = getConnection(); var ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, gameId);
+            ps.setString(2, color.toUpperCase());
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            throw new DataAccessException("Error: couldn't remove player seat", e);
+        }
+    }
+
 
 }

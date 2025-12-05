@@ -174,17 +174,21 @@ public class GameService {
 
         ChessGame.TeamColor opponent =
                 (playerColor == ChessGame.TeamColor.WHITE) ? ChessGame.TeamColor.BLACK : ChessGame.TeamColor.WHITE;
+        String opponentUsername = switch (opponent) {
+            case WHITE -> gameData.whiteUsername();
+            case BLACK -> gameData.blackUsername();
+        };
 
         String statusNotification = null;
         if (game.isInCheckmate(opponent)) {
-            statusNotification = opponent + " is in checkmate";
-            String winner = (playerColor == ChessGame.TeamColor.WHITE) ? "WHITE_WON" : "BLACK_WON";
-            gameDao.updateGameStatus(gameId, "OVER", winner);
+            statusNotification = opponentUsername + " is in checkmate";
+            String winner = (playerColor == ChessGame.TeamColor.WHITE) ? "WHITE" : "BLACK";
+            gameDao.updateGameStatus(gameId, "FINISHED", winner);
         } else if (game.isInStalemate(opponent)) {
             statusNotification = "Stalemate";
-            gameDao.updateGameStatus(gameId, "OVER", "STALEMATE");
+            gameDao.updateGameStatus(gameId, "FINISHED", "DRAW");
         } else if (game.isInCheck(opponent)) {
-            statusNotification = opponent + " is in check";
+            statusNotification = opponentUsername + " is in check";
         }
 
         return new MoveResult(dto, moveNotification, statusNotification);
@@ -192,9 +196,9 @@ public class GameService {
 
     private String describeMove(String username, ChessMove move) {
         var start = move.getStartPosition();
-        var end   = move.getEndPosition();
-        String from = toAlgebraic(start);
-        String to   = toAlgebraic(end);
+        var end = move.getEndPosition();
+        String from = toChessSquareFormat(start);
+        String to = toChessSquareFormat(end);
 
         String base = username + " moved from " + from + " to " + to;
         if (move.getPromotionPiece() != null) {
@@ -203,10 +207,35 @@ public class GameService {
         return base;
     }
 
-    private String toAlgebraic(chess.ChessPosition pos) {
-        char file = (char) ('a' + (pos.getColumn() - 1));  // 1→a, 2→b, ...
-        int rank  = pos.getRow();                          // 1..8
+    private String toChessSquareFormat(chess.ChessPosition pos) {
+        char file = (char) ('a' + (pos.getColumn() - 1));
+        int rank  = pos.getRow();
         return "" + file + rank;
     }
+
+    public void leaveGame(int gameId, String authToken)
+            throws DataAccessException, UnauthorizedException, BadRequestException {
+
+        AuthData auth = authDao.getAuth(authToken);
+        if (auth == null) {
+            throw new UnauthorizedException("Error: Unauthorized");
+        }
+        String username = auth.username();
+
+        GameData gameData = gameDao.getGame(gameId);
+        if (gameData == null) {
+            throw new BadRequestException("Error: Game not found");
+        }
+
+        String white = gameData.whiteUsername();
+        String black = gameData.blackUsername();
+
+        if (username.equals(white)) {
+            gameDao.removePlayerSeat(gameId, "WHITE");
+        } else if (username.equals(black)) {
+            gameDao.removePlayerSeat(gameId, "BLACK");
+        }
+    }
+
 
 }

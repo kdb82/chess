@@ -78,8 +78,10 @@ public class Repl {
             case "create":
                 return client.createGame(params);
             case "join":
+                state = ClientState.IN_GAME;
                 return client.joinGame(params);
             case "observe":
+                state = ClientState.IN_GAME;
                 return client.observeGame(params);
             case "list":
                 return client.listGames();
@@ -87,6 +89,12 @@ public class Repl {
                 return client.leave();
             case "move":
                 return client.move(params);
+            case "resign":
+                return client.resign(params);
+            case "highlight":
+                return client.highlight(params);
+            case "redraw":
+                return client.redraw(params);
             default:
                 help();
             }
@@ -117,10 +125,11 @@ public class Repl {
             help: display all available commands
             redraw: Redraw the chess board
             leave: leave current game
-            move <FROM_SQ> <TO_SQ>: make move (letter must come first, then letter)
+            move <FROM_SQ> <TO_SQ>: make move (letter must come first, then number)
             resign: resign game
             highlight <SQUARE TO HIGHLIGHT>: highlights all legal moves for piece on given square
             """;
+            System.out.println(msg);
         } else {
             System.out.println("Implement functionality for gameplay commands");
         }

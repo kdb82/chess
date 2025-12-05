@@ -98,7 +98,7 @@ public final class DrawBoard {
 
                 System.out.print(bg + glyph + EscapeSequences.RESET_BG_COLOR);
             }
-            System.out.printf(" %d ", rowNum);
+            System.out.printf(" %d\n", rowNum);
         }
         printLetters(drawWhiteSide);
         System.out.flush();

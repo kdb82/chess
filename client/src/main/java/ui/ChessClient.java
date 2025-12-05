@@ -25,6 +25,7 @@ public class ChessClient implements NotificationHandler {
     private boolean isPlayer;
     private String current_user;
     private final Gson gson = new Gson();
+    private boolean gameOver;
 //    private volatile boolean waitingForWs = false;
 
     public ChessClient(String serverUrl) {
@@ -226,6 +227,8 @@ public class ChessClient implements NotificationHandler {
         if (!isPlayer) {
             return "Observers cannot make moves.";
         }
+        if(gameOver) return "Can't make move, game is over.";
+
         String from_sq = params[0].toLowerCase();
         String to_sq = params[1].toLowerCase();
         char to_num = to_sq.charAt(1);
@@ -242,8 +245,9 @@ public class ChessClient implements NotificationHandler {
         return null;
     }
 
-    public void redraw(String[] params) {
+    public String redraw(String[] params) {
 
+        return null;
     }
 
     public String resign(String[] params) {
@@ -254,7 +258,7 @@ public class ChessClient implements NotificationHandler {
         if (ws == null || currentGameId == null) {
             return "No game to leave.";
         }
-        ws.leaveGame(currentGameID(), isPlayer, current_user);
+        ws.leaveGame(currentGameID(), isPlayer, current_user, authToken);
         currentGameId = null;
         System.out.print(EscapeSequences.ERASE_SCREEN);
         return "Left the game.";
@@ -304,8 +308,11 @@ public class ChessClient implements NotificationHandler {
                 DrawBoard.redraw(state, drawWhiteSide);
             } else {
                 System.out.println("[WebSocket message: " + notification.type() + "]: " + notification.message());
+                if (notification.message().contains("checkmate")) {
+                    System.out.println("GAME OVER (type leave to leave game)");
+                    gameOver = true;
+                }
             }
-            System.out.printf("[%s] >>> ", ClientState.LOGGED_IN);
 //        waitingForWs = false;
         }
     }
