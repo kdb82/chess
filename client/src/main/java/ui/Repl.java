@@ -94,7 +94,7 @@ public class Repl {
             case "highlight":
                 return client.highlight(params);
             case "redraw":
-                return client.redraw(params);
+                client.redraw(params);
             default:
                 help();
             }

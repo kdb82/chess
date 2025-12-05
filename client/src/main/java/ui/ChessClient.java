@@ -9,6 +9,13 @@ import webSocketMessages.Notification;
 import websocket.NotificationHandler;
 import websocket.WebSocketFacade;
 import serialization.GameStateDTO;
+import chess.ChessGame;
+import chess.ChessMove;
+import chess.ChessPosition;
+import serialization.GameStateMapper;
+import java.util.ArrayList;
+import java.util.Collection;
+
 
 import java.util.Objects;
 
@@ -26,6 +33,7 @@ public class ChessClient implements NotificationHandler {
     private String current_user;
     private final Gson gson = new Gson();
     private boolean gameOver;
+    private GameStateDTO currentState;
 //    private volatile boolean waitingForWs = false;
 
     public ChessClient(String serverUrl) {
@@ -239,16 +247,55 @@ public class ChessClient implements NotificationHandler {
     }
 
     public String highlight(String[] params) {
-        if (params.length != 1) return "Usage: highlight <SQUARE TO HIGHLIGHT>";
+        if (params.length != 1) {
+            return "Usage: highlight <SQUARE>";
+        }
+
+        if (currentState == null) {
+            return "No game available to highlight.";
+        }
+
         String sq = params[0];
+        if (!isValidSquare(sq)) {
+            return "Invalid square. Use something like e2.";
+        }
 
-        return null;
+        sq = sq.toLowerCase();
+        char letter = sq.charAt(0);
+        char rankNumber = sq.charAt(1);
+
+        int col = letter - 'a' + 1;
+        int row = rankNumber - '0';
+
+        ChessPosition pos = new ChessPosition(row, col);
+
+        ChessGame game = GameStateMapper.dtoToGame(currentState);
+        Collection<ChessMove> moves = game.validMoves(pos);
+
+        var highlightSquares = new ArrayList<ChessPosition>();
+        highlightSquares.add(pos);
+        for (ChessMove m : moves) {
+            highlightSquares.add(m.getEndPosition());
+        }
+
+        synchronized (System.out) {
+            DrawBoard.redraw(currentState, drawWhiteSide, highlightSquares);
+        }
+
+        return "Highlighted legal moves for " + sq;
     }
 
-    public String redraw(String[] params) {
 
-        return null;
+    public void redraw(String[] params) {
+        if (currentState == null) {
+            System.out.println("No game available to redraw.");
+            return;
+        }
+        synchronized (System.out) {
+            DrawBoard.redraw(currentState, drawWhiteSide);
+        }
     }
+
 
     public String resign(String[] params) {
         return null;
@@ -305,6 +352,7 @@ public class ChessClient implements NotificationHandler {
 
             if (Objects.requireNonNull(notification.type()) == Notification.Type.LOAD_GAME) {
                 GameStateDTO state = gson.fromJson(notification.message(), GameStateDTO.class);
+                this.currentState = state;
                 DrawBoard.redraw(state, drawWhiteSide);
             } else {
                 System.out.println("[WebSocket message: " + notification.type() + "]: " + notification.message());

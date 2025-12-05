@@ -4,6 +4,9 @@ import chess.ChessGame;
 import chess.ChessPiece;
 import serialization.GamePieceDTO;
 import serialization.GameStateDTO;
+import chess.ChessPosition;
+import java.util.Collection;
+
 
 public final class DrawBoard {
 
@@ -103,6 +106,60 @@ public final class DrawBoard {
         printLetters(drawWhiteSide);
         System.out.flush();
     }
+
+    //overloaded for highlighting
+    public static void redraw(GameStateDTO state,
+                              boolean drawWhiteSide,
+                              Collection<ChessPosition> highlights) {
+
+        GamePieceDTO[][] board = new GamePieceDTO[9][9];
+        for (GamePieceDTO piece : state.gamePieces()) {
+            board[piece.row()][piece.col()] = piece;
+        }
+
+        System.out.print(EscapeSequences.ERASE_SCREEN);
+
+        System.out.println("Turn: " + state.turn());
+        printLetters(drawWhiteSide);
+
+        for (int r = 0; r < 8; r++) {
+            int rowNum = drawWhiteSide ? 8 - r : 1 + r;
+            System.out.printf(" %d ", rowNum);
+
+            for (int c = 0; c < 8; c++) {
+                int colNum = drawWhiteSide ? 1 + c : 8 - c;
+                boolean light = ((rowNum + colNum) % 2 == 1);
+
+                String bg = light
+                        ? EscapeSequences.SET_BG_COLOR_LIGHT_GREY
+                        : EscapeSequences.SET_BG_COLOR_DARK_GREY;
+
+                if (isHighlighted(highlights, rowNum, colNum)) {
+                    // pick any distinct highlight color you’ve defined
+                    bg = EscapeSequences.SET_BG_COLOR_BLUE;
+                    // if you don't have GREEN, change to an existing color constant
+                }
+
+                GamePieceDTO piece = board[rowNum][colNum];
+                String glyph = findSymbol(piece);
+
+                System.out.print(bg + glyph + EscapeSequences.RESET_BG_COLOR);
+            }
+            System.out.printf(" %d\n", rowNum);
+        }
+        printLetters(drawWhiteSide);
+        System.out.flush();
+    }
+
+    private static boolean isHighlighted(Collection<ChessPosition> highlights, int row, int col) {
+        for (ChessPosition p : highlights) {
+            if (p.getRow() == row && p.getColumn() == col) {
+                return true;
+            }
+        }
+        return false;
+    }
+
 
     private static String findSymbol(GamePieceDTO piece) {
         if (piece == null) {
