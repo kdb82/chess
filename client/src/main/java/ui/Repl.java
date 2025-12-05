@@ -115,7 +115,7 @@ public class Repl {
             help: display all available commands
             redraw: Redraw the chess board
             leave: leave current game
-            move <FROM_SQ> <TO_SQ>: make move
+            move <FROM_SQ> <TO_SQ>: make move (letter must come first, then letter)
             resign: resign game
             highlight <SQUARE TO HIGHLIGHT>: highlights all legal moves for piece on given square
             """;

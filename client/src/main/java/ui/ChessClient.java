@@ -1,5 +1,7 @@
 package ui;
 
+import chess.ChessMove;
+import chess.ChessPosition;
 import exception.ResponseException;
 import client.ServerFacade;
 import requests.*;
@@ -210,10 +212,24 @@ public class ChessClient implements NotificationHandler {
     }
 
     //NEEDS IMPLEMENTATION FOR GAMEPLAY
-    public String move(String[] params) {
-        if (params.length != 2) return "Usage: move <FROM_SQ> <TO_SQ?>";
-        var from_sq = params[0].toUpperCase();
-        var to_sq = params[1].toUpperCase();
+    public String move(String[] params) throws ResponseException {
+        if (params.length != 2) return "Usage: move <FROM_SQ> <TO_SQ>";
+        if (currentGameId == null || ws == null) {
+            return "You must join or observe a game before moving.";
+        }
+        if (!isValidSquare(params[0]) || !isValidSquare(params[1])) {
+            return "Invalid move.";
+        }
+        if (!isPlayer) {
+            return "Observers cannot make moves.";
+        }
+        String from_sq = params[0].toLowerCase();
+        String to_sq = params[1].toLowerCase();
+        char to_num = to_sq.charAt(1);
+        boolean promotion = to_num == '1' || to_num == '8';
+
+
+        ws.makeMove(currentGameId, from_sq, to_sq, promotion);
         return null;
     }
 
@@ -269,6 +285,11 @@ public class ChessClient implements NotificationHandler {
 
     private static String nullToDash(String s) {
         return (s == null || s.isBlank()) ? "-" : s;
+    }
+
+    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
+    private boolean isValidSquare(String square) {
+        return square.matches("^[A-Ha-h][1-8]$");
     }
 
 

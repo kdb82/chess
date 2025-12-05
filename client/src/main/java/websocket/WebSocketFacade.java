@@ -88,14 +88,14 @@ public class WebSocketFacade extends Endpoint {
         sendJson(Map.of("type", "OBSERVE", "gameId", gameId, "current_user", current_user));
     }
 
-    public void makeMove(int gameId, String from, String to, String promotion) throws ResponseException {
+    public void makeMove(int gameId, String from, String to, boolean promotion) throws ResponseException {
         Map<String, Object> message = new HashMap<>();
         message.put("type", "MOVE");
         message.put("gameId", gameId);
         message.put("from", from);
         message.put("to", to);
-        if (promotion != null && !promotion.isBlank()) {
-            message.put("promotion", promotion);
+        if (promotion) {
+            message.put("promotion", true);
         }
         sendJson(message);
     }

@@ -64,7 +64,12 @@ public class WebSocketHandler implements WsConnectHandler, WsMessageHandler, WsC
                 }
 
                 case "MOVE": {
-                    //Implement
+                    int gameId = ((Number)  msg.get("gameId")).intValue();
+                    String from = (String) msg.get("from");
+                    String to = (String) msg.get("to");
+                    Boolean promotion = (Boolean) msg.get("promotion");
+
+
                     break;
                 }
 
