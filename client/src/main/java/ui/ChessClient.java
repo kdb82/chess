@@ -236,7 +236,7 @@ public class ChessClient implements NotificationHandler {
         if (ws == null || currentGameId == null) {
             return "No game to leave.";
         }
-        ws.leaveGame(currentGameID(), isPlayer);
+        ws.leaveGame(currentGameID(), isPlayer, current_user);
         currentGameId = null;
         System.out.print(EscapeSequences.ERASE_SCREEN);
         return "Left the game.";
