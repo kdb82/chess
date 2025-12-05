@@ -5,6 +5,7 @@ import exception.ResponseException;
 import client.ServerFacade;
 import requests.*;
 import results.*;
+import serialization.DefaultGameState;
 import webSocketMessages.Notification;
 import websocket.NotificationHandler;
 import websocket.WebSocketFacade;
@@ -12,6 +13,7 @@ import serialization.GameStateDTO;
 import chess.ChessGame;
 import chess.ChessMove;
 import chess.ChessPosition;
+import chess.ChessPiece;
 import serialization.GameStateMapper;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -34,7 +36,7 @@ public class ChessClient implements NotificationHandler {
     private final Gson gson = new Gson();
     private boolean gameOver;
     private GameStateDTO currentState;
-//    private volatile boolean waitingForWs = false;
+    //    private volatile boolean waitingForWs = false;
 
     public ChessClient(String serverUrl) {
         this.baseURL = serverUrl;
@@ -252,7 +254,7 @@ public class ChessClient implements NotificationHandler {
         }
 
         if (currentState == null) {
-            return "No game available to highlight.";
+            currentState = DefaultGameState.loadDefaultGameState();
         }
 
         String sq = params[0];
@@ -270,6 +272,11 @@ public class ChessClient implements NotificationHandler {
         ChessPosition pos = new ChessPosition(row, col);
 
         ChessGame game = GameStateMapper.dtoToGame(currentState);
+        ChessPiece piece = game.getBoard().getPiece(pos);
+        if (piece == null) {
+            return "No piece on " + sq + " to highlight.";
+        }
+
         Collection<ChessMove> moves = game.validMoves(pos);
 
         var highlightSquares = new ArrayList<ChessPosition>();
@@ -286,13 +293,15 @@ public class ChessClient implements NotificationHandler {
     }
 
 
-    public void redraw(String[] params) {
+    public String redraw(String[] params) {
         if (currentState == null) {
-            System.out.println("No game available to redraw.");
-            return;
-        }
-        synchronized (System.out) {
-            DrawBoard.redraw(currentState, drawWhiteSide);
+            DrawBoard.drawInitial(drawWhiteSide);
+            return "Current Board";
+        } else {
+            synchronized (System.out) {
+                DrawBoard.redraw(currentState, drawWhiteSide);
+                return "Current Board";
+            }
         }
     }
 

@@ -58,7 +58,7 @@ public class WebSocketHandler implements WsConnectHandler, WsMessageHandler, WsC
 
                     broadcastToGame(gameId, session,
                             new Notification(Notification.Type.JOIN, current_user + " joined game " +
-                                    (color != null ? " (" + color + ")" : "")));
+                                    (color != null ? "(" + color + ")" : "")));
                     break;
                 }
 
@@ -95,7 +95,7 @@ public class WebSocketHandler implements WsConnectHandler, WsMessageHandler, WsC
                                 new Notification(Notification.Type.LOAD_GAME, json));
 
                         if (result.moveNotification() != null) {
-                            broadcastToGame(gameId, session,
+                            broadcastToGame(gameId, null,
                                     new Notification(Notification.Type.NOTIFICATION, result.moveNotification()));
                         }
 

@@ -212,6 +212,37 @@ public class GameService {
         int rank  = pos.getRow();
         return "" + file + rank;
     }
+    public void resignGame(int gameId, String username)
+            throws DataAccessException, BadRequestException {
+
+        if (username == null || username.isBlank()) {
+            throw new BadRequestException("Error: username required");
+        }
+
+        GameData game = gameDao.getGame(gameId);
+        if (game == null) {
+            throw new BadRequestException("Error: Game not found");
+        }
+
+        String white = game.whiteUsername();
+        String black = game.blackUsername();
+
+        String result;
+        if (username.equals(white)) {
+            // white resigns → black wins
+            result = "BLACK_WON_RESIGN";
+        } else if (username.equals(black)) {
+            // black resigns → white wins
+            result = "WHITE_WON_RESIGN";
+        } else {
+            // observers can’t resign the game
+            throw new BadRequestException("Error: Only a player can resign");
+        }
+
+        // mark game as over in DB
+        gameDao.updateGameStatus(gameId, "OVER", result);
+    }
+
 
     public void leaveGame(int gameId, String authToken)
             throws DataAccessException, UnauthorizedException, BadRequestException {

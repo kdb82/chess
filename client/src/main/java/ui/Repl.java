@@ -86,6 +86,7 @@ public class Repl {
             case "list":
                 return client.listGames();
             case "leave":
+                state = ClientState.LOGGED_IN;
                 return client.leave();
             case "move":
                 return client.move(params);
@@ -94,7 +95,7 @@ public class Repl {
             case "highlight":
                 return client.highlight(params);
             case "redraw":
-                client.redraw(params);
+                return client.redraw(params);
             default:
                 help();
             }
