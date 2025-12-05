@@ -22,4 +22,7 @@ public interface GameDao {
     default ChessGame loadGameState(int gameId) throws DataAccessException {
         return new ChessGame();
     }
+    default void updateGameStatus(int gameId, String status, String result) throws DataAccessException {
+
+    }
 }

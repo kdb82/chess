@@ -6,9 +6,9 @@ public record Notification(Type type, String message) {
     public enum Type {
         JOIN,
         LEAVE,
-        MOVE,
         OBSERVE,
         LOAD_GAME,
+        MOVE,
         ERROR
     }
 

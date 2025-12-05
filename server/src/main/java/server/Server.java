@@ -49,7 +49,7 @@ public class Server {
         ClearService clearService = new ClearService(userDao, authDao, gameDao);
         ClearHandler clearHandler = new ClearHandler(clearService);
 
-        WebSocketHandler webSocketHandler = new WebSocketHandler(gameDao);
+        WebSocketHandler webSocketHandler = new WebSocketHandler(gameService);
 
         registerEndpoints(userHandler, gameHandler, clearHandler, webSocketHandler);
 

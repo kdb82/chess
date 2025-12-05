@@ -251,6 +251,20 @@ public class SqlGameDao implements GameDao {
             throw new DataAccessException("Error loading game state", e);
         }
     }
+    @Override
+    public void updateGameStatus(int gameId, String status, String result) throws DataAccessException {
+        final String sql = "UPDATE games SET status = ?, result = ? WHERE id = ?";
+        try (var conn = getConnection(); var ps = conn.prepareStatement(sql)) {
+            ps.setString(1, status);
+            ps.setString(2, result);
+            ps.setInt(3, gameId);
 
+            if (ps.executeUpdate() == 0) {
+                throw new DataAccessException("Error: game not found");
+            }
+        } catch (SQLException e) {
+            throw new DataAccessException("Error: couldn't update game status", e);
+        }
+    }
 
 }

@@ -231,7 +231,7 @@ public class ChessClient implements NotificationHandler {
         char to_num = to_sq.charAt(1);
         boolean promotion = to_num == '1' || to_num == '8';
 
-        ws.makeMove(currentGameId, from_sq, to_sq, promotion);
+        ws.makeMove(currentGameId, from_sq, to_sq, promotion, authToken);
         return "Attempting move from " + from_sq + " to " + to_sq;
     }
 

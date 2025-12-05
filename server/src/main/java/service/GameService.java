@@ -14,6 +14,12 @@ import requests.ListGameRequest;
 import results.CreateGameResult;
 import results.GameSummary;
 import results.ListGamesResult;
+import chess.ChessGame;
+import chess.ChessMove;
+import chess.InvalidMoveException;
+import serialization.GameStateDTO;
+import serialization.GameStateMapper;
+
 
 import java.util.ArrayList;
 import java.util.List;
@@ -115,4 +121,92 @@ public class GameService {
         String t = c.trim().toUpperCase();
         return ("WHITE".equals(t) || "BLACK".equals(t)) ? t : null;
     }
+
+    public record MoveResult(
+            GameStateDTO gameState,
+            String moveNotification,
+            String statusNotification
+    ) {}
+
+    public MoveResult makeMove(String authToken, int gameId, ChessMove move)
+            throws DataAccessException, UnauthorizedException, BadRequestException, InvalidMoveException {
+
+        if (move == null) {
+            throw new BadRequestException("Error: move is null");
+        }
+
+        AuthData auth = authDao.getAuth(authToken);
+        if (auth == null) {
+            throw new UnauthorizedException("Error: Unauthorized");
+        }
+        String username = auth.username();
+
+        GameData gameData = gameDao.getGame(gameId);
+        if (gameData == null) {
+            throw new BadRequestException("Error: Game not found");
+        }
+
+        ChessGame game = gameData.game();
+        if (game == null) {
+            game = gameDao.loadGameState(gameId);
+        }
+
+        ChessGame.TeamColor playerColor;
+        if (username.equals(gameData.whiteUsername())) {
+            playerColor = ChessGame.TeamColor.WHITE;
+        } else if (username.equals(gameData.blackUsername())) {
+            playerColor = ChessGame.TeamColor.BLACK;
+        } else {
+            throw new UnauthorizedException("Error: you are not a player in this game");
+        }
+
+        if (game.getTeamTurn() != playerColor) {
+            throw new BadRequestException("Error: not your turn");
+        }
+
+        game.makeMove(move);
+
+        gameDao.saveGameState(gameId, game);
+
+        GameStateDTO dto = GameStateMapper.gameToDTO(game);
+
+        String moveNotification = describeMove(username, move);
+
+        ChessGame.TeamColor opponent =
+                (playerColor == ChessGame.TeamColor.WHITE) ? ChessGame.TeamColor.BLACK : ChessGame.TeamColor.WHITE;
+
+        String statusNotification = null;
+        if (game.isInCheckmate(opponent)) {
+            statusNotification = opponent + " is in checkmate";
+            String winner = (playerColor == ChessGame.TeamColor.WHITE) ? "WHITE_WON" : "BLACK_WON";
+            gameDao.updateGameStatus(gameId, "OVER", winner);
+        } else if (game.isInStalemate(opponent)) {
+            statusNotification = "Stalemate";
+            gameDao.updateGameStatus(gameId, "OVER", "STALEMATE");
+        } else if (game.isInCheck(opponent)) {
+            statusNotification = opponent + " is in check";
+        }
+
+        return new MoveResult(dto, moveNotification, statusNotification);
+    }
+
+    private String describeMove(String username, ChessMove move) {
+        var start = move.getStartPosition();
+        var end   = move.getEndPosition();
+        String from = toAlgebraic(start);
+        String to   = toAlgebraic(end);
+
+        String base = username + " moved from " + from + " to " + to;
+        if (move.getPromotionPiece() != null) {
+            base += " and promoted to " + move.getPromotionPiece();
+        }
+        return base;
+    }
+
+    private String toAlgebraic(chess.ChessPosition pos) {
+        char file = (char) ('a' + (pos.getColumn() - 1));  // 1→a, 2→b, ...
+        int rank  = pos.getRow();                          // 1..8
+        return "" + file + rank;
+    }
+
 }

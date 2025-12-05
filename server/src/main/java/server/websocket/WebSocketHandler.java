@@ -1,16 +1,12 @@
 package server.websocket;
 
-import chess.ChessGame;
-import chess.ChessMove;
-import chess.ChessPiece;
-import chess.ChessPosition;
+import chess.*;
 import com.google.gson.Gson;
 import dataaccess.DataAccessException;
 import dataaccess.GameDao;
 import io.javalin.websocket.*;
 import org.eclipse.jetty.websocket.api.Session;
-import serialization.GameStateDTO;
-import serialization.GameStateMapper;
+import service.GameService;
 import webSocketMessages.Notification;
 
 import java.util.Map;
@@ -22,10 +18,10 @@ public class WebSocketHandler implements WsConnectHandler, WsMessageHandler, WsC
     private final ConnectionManager connections = new ConnectionManager();
     private static final Map<Integer, Set<Session>> watchers = new ConcurrentHashMap<>();
 
-    private final GameDao gameDao;
+    private final GameService gameService;
 
-    public WebSocketHandler(GameDao gameDao) {
-        this.gameDao = gameDao;
+    public WebSocketHandler(GameService gameService) {
+        this.gameService = gameService;
     }
 
     @Override
@@ -81,34 +77,41 @@ public class WebSocketHandler implements WsConnectHandler, WsMessageHandler, WsC
                     String from = (String) msg.get("from");
                     String to = (String) msg.get("to");
                     boolean promotion = Boolean.TRUE.equals(msg.get("promotion"));
+                    String authToken = (String) msg.get("authToken");
 
                     try {
-                        ChessGame game = gameDao.loadGameState(gameId);
-                        ChessPosition start = parseSquare(session, from);
-                        ChessPosition end = parseSquare(session, to);
-
+                        ChessPosition start = parseSquare(from);
+                        ChessPosition end = parseSquare(to);
                         ChessPiece.PieceType promoPiece = null;
                         if (promotion) {
                             promoPiece = ChessPiece.PieceType.QUEEN;
                         }
                         ChessMove move = new ChessMove(start, end, promoPiece);
-                        game.makeMove(move);
 
-                        gameDao.saveGameState(gameId, game);
-                        GameStateDTO dto = GameStateMapper.gameToDTO(game);
+                        GameService.MoveResult result = gameService.makeMove(authToken, gameId, move);
 
-                        String json = gson.toJson(dto);
-                        var update = new Notification(Notification.Type.LOAD_GAME, json);
+                        String json = gson.toJson(result.gameState());
+                        broadcastToGame(gameId, null,
+                                new Notification(Notification.Type.LOAD_GAME, json));
 
-                        sendTo(session, update);
-                        broadcastToGame(gameId, session, update);
+                        if (result.moveNotification() != null) {
+                            broadcastToGame(gameId, session,
+                                    new Notification(Notification.Type.MOVE, result.moveNotification()));
+                        }
+
+                        if (result.statusNotification() != null) {
+                            broadcastToGame(gameId, null,
+                                    new Notification(Notification.Type.MOVE, result.statusNotification()));
+                        }
 
                     } catch (DataAccessException e) {
-                        sendTo(session, new Notification(Notification.Type.ERROR,
-                                "Database error: " + e.getMessage()));
+                        sendTo(session, new Notification(
+                                Notification.Type.ERROR,
+                                "Error: database problem: " + e.getMessage()));
                     } catch (Exception e) {
-                        sendTo(session, new Notification(Notification.Type.ERROR,
-                                "Invalid move: " + e.getMessage()));
+                        sendTo(session, new Notification(
+                                Notification.Type.ERROR,
+                                "Error: " + e.getMessage()));
                     }
                     break;
                 }
@@ -176,7 +179,7 @@ public class WebSocketHandler implements WsConnectHandler, WsMessageHandler, WsC
             }
         }
     }
-    private ChessPosition parseSquare(Session s, String sq) {
+    private ChessPosition parseSquare(String sq) {
         if (sq == null || sq.length() != 2) {
             throw new IllegalArgumentException("invalid square: " + sq);
         }
