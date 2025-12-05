@@ -95,15 +95,17 @@ public final class DrawBoard {
                         : EscapeSequences.SET_BG_COLOR_DARK_GREY;
 
                 GamePieceDTO piece = board[rowNum][colNum];
-                String glyph = glyphFor(piece);
+                String glyph = findSymbol(piece);
 
                 System.out.print(bg + glyph + EscapeSequences.RESET_BG_COLOR);
             }
             System.out.printf(" %d ", rowNum);
         }
+        printLetters(drawWhiteSide);
+        System.out.flush();
     }
 
-    private static String glyphFor(GamePieceDTO piece) {
+    private static String findSymbol(GamePieceDTO piece) {
         if (piece == null) {
             return EscapeSequences.EMPTY;
         }
