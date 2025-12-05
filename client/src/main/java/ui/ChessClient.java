@@ -64,7 +64,7 @@ public class ChessClient implements NotificationHandler {
             var name = String.join(" ", params);
             var req = new CreateGameRequest(name);
             CreateGameResult res = server.createGame(req, authToken);
-            return "Created game " + res.gameID() + " named \"" + name + "\"";
+            return "Created game" + " named \"" + name + "\"";
         } catch (ResponseException e) {
             return "Create failed: " + e.getMessage();
         }

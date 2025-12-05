@@ -107,7 +107,6 @@ public class Repl {
             join <ID> [WHITE|BLACK]: Join game with given id with chosen color
             list: view all current available games
             observe <ID>: watch a game
-            leave: leave current game
             """;
             System.out.println(msg);
         } else {
