@@ -3,15 +3,18 @@ package server.websocket;
 import chess.*;
 import com.google.gson.Gson;
 import dataaccess.DataAccessException;
-import dataaccess.GameDao;
 import io.javalin.websocket.*;
 import org.eclipse.jetty.websocket.api.Session;
+import serialization.GameStateDTO;
 import service.GameService;
 import webSocketMessages.Notification;
+import websocket.messages.*;
 
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+
+import static websocket.messages.ServerMessage.ServerMessageType.ERROR;
 
 public class WebSocketHandler implements WsConnectHandler, WsMessageHandler, WsCloseHandler {
     private final Gson gson = new Gson();
@@ -30,7 +33,6 @@ public class WebSocketHandler implements WsConnectHandler, WsMessageHandler, WsC
         ctx.enableAutomaticPings();
         Session session = ctx.session;
         connections.add(session);
-        sendTo(session, new Notification(Notification.Type.CONNECT, "Connected"));
     }
 
     @Override
@@ -39,6 +41,12 @@ public class WebSocketHandler implements WsConnectHandler, WsMessageHandler, WsC
         Session session = ctx.session;
         try {
             var msg = gson.fromJson(ctx.message(), Map.class);
+            String commandType = (String) msg.get("commandType");
+            if (commandType != null) {
+                handleUserGameCommand(session, msg, commandType);
+                return;
+            }
+
             String type = (String) msg.get("type");
             if (type == null) {
                 sendTo(session, new Notification(Notification.Type.ERROR, "missing type"));
@@ -171,11 +179,171 @@ public class WebSocketHandler implements WsConnectHandler, WsMessageHandler, WsC
         }
     }
 
+    @SuppressWarnings("unchecked")
+    private void handleUserGameCommand(Session session, Map msg, String commandType) {
+        switch (commandType) {
+
+            // ======================== CONNECT ========================
+            case "CONNECT" -> {
+                String authToken = (String) msg.get("authToken");
+                Number gameIdNum = (Number) msg.get("gameID");
+
+                if (authToken == null || gameIdNum == null) {
+                    sendErrorServerMessage(session, "Error: missing authToken or gameID");
+                    return;
+                }
+
+                int gameId = gameIdNum.intValue();
+
+                try {
+                    // You should implement this in GameService:
+                    //   public GameStateDTO loadGameState(String authToken, int gameId)
+                    GameStateDTO gameState = gameService.loadGameState(authToken, gameId);
+
+                    // Track this session as a watcher of this game
+                    watchers.computeIfAbsent(gameId, k -> ConcurrentHashMap.newKeySet()).add(session);
+
+                    // 1) LOAD_GAME to the root client (the sender)
+                    ServerMessage load = new ServerMessage(ServerMessage.ServerMessageType.LOAD_GAME);
+                    load.setGame(gameState);
+                    sendServerMessage(session, load);
+
+                    String username = gameService.getUsernameForAuth(authToken);
+
+                    ServerMessage note = new ServerMessage(ServerMessage.ServerMessageType.NOTIFICATION);
+                    note.setMessage(username + " connected to game " + gameId);
+                    broadcastToGame(gameId, session, note);
+
+                } catch (Exception e) {
+                    sendErrorServerMessage(session, "Error: " + e.getMessage());
+                }
+            }
+
+            case "MAKE_MOVE" -> {
+                String authToken = (String) msg.get("authToken");
+                Number gameIdNum = (Number) msg.get("gameID");
+
+                if (authToken == null || gameIdNum == null) {
+                    sendErrorServerMessage(session, "Error: missing authToken or gameID");
+                    return;
+                }
+
+                int gameId = gameIdNum.intValue();
+
+                try {
+                    Object moveObj = msg.get("move");
+                    if (moveObj == null) {
+                        sendErrorServerMessage(session, "Error: missing move");
+                        return;
+                    }
+
+                    // Let Gson build a ChessMove from the nested move object
+                    ChessMove move = gson.fromJson(gson.toJson(moveObj), ChessMove.class);
+
+                    GameService.MoveResult result = gameService.makeMove(authToken, gameId, move);
+
+                    GameStateDTO dto = result.gameState();
+
+                    // 1) LOAD_GAME -> everybody in the game (including sender)
+                    ServerMessage load = new ServerMessage(ServerMessage.ServerMessageType.LOAD_GAME);
+                    load.setGame(dto);
+                    broadcastToGame(gameId, null, load);
+
+                    // 2) Move notification -> everyone EXCEPT the sender
+                    if (result.moveNotification() != null) {
+                        ServerMessage moveMsg = new ServerMessage(ServerMessage.ServerMessageType.NOTIFICATION);
+                        moveMsg.setMessage(result.moveNotification());
+                        // exclude sender so they only see LOAD_GAME for normal moves
+                        broadcastToGame(gameId, session, moveMsg);
+                    }
+
+                    // 3) Status notification (check / checkmate / stalemate) -> everyone
+                    if (result.statusNotification() != null) {
+                        ServerMessage statusMsg = new ServerMessage(ServerMessage.ServerMessageType.NOTIFICATION);
+                        statusMsg.setMessage(result.statusNotification());
+                        // include sender; tests expect an extra NOTIFICATION only in this case
+                        broadcastToGame(gameId, null, statusMsg);
+                    }
+
+                } catch (Exception e) {
+                    sendErrorServerMessage(session, "Error: " + e.getMessage());
+                }
+            }
+
+
+
+            // ======================== RESIGN ========================
+            case "RESIGN" -> {
+                String authToken = (String) msg.get("authToken");
+                Number gameIdNum = (Number) msg.get("gameID");
+
+                if (authToken == null || gameIdNum == null) {
+                    sendErrorServerMessage(session, "Error: missing authToken or gameID");
+                    return;
+                }
+
+                int gameId = gameIdNum.intValue();
+
+                try {
+                    // Get username from auth token
+                    String username = gameService.getUsernameForAuth(authToken);
+
+                    // Your GameService.resignGame takes (gameId, username)
+                    gameService.resignGame(gameId, username);
+
+                    // Notify ALL clients in the game (including the resigner)
+                    ServerMessage note = new ServerMessage(ServerMessage.ServerMessageType.NOTIFICATION);
+                    note.setMessage(username + " resigned. Game over.");
+                    broadcastToGame(gameId, null, note);
+
+                } catch (Exception e) {
+                    sendErrorServerMessage(session, "Error: " + e.getMessage());
+                }
+            }
+
+            // ======================== LEAVE ========================
+            case "LEAVE" -> {
+                String authToken = (String) msg.get("authToken");
+                Number gameIdNum = (Number) msg.get("gameID");
+
+                if (authToken == null || gameIdNum == null) {
+                    sendErrorServerMessage(session, "Error: missing authToken or gameID");
+                    return;
+                }
+
+                int gameId = gameIdNum.intValue();
+
+                // Remove from watcher set first so they stop receiving messages
+                removeWatcher(gameId, session);
+
+                try {
+                    String username = gameService.getUsernameForAuth(authToken);
+
+                    // For players, this clears their seat; for observers (not seated) it does nothing.
+                    gameService.leaveGame(gameId, authToken);
+
+                    // Notify everyone else in the game that this user left
+                    ServerMessage note = new ServerMessage(ServerMessage.ServerMessageType.NOTIFICATION);
+                    note.setMessage(username + " left the game.");
+                    broadcastToGame(gameId, session, note);
+
+                } catch (Exception e) {
+                    sendErrorServerMessage(session, "Error: " + e.getMessage());
+                }
+            }
+
+            // ======================== Unknown ========================
+            default -> sendErrorServerMessage(session, "Error: Unknown commandType " + commandType);
+        }
+    }
+
+
     @Override
     public void handleClose(WsCloseContext ctx) {
         System.out.println("[WS] closed");
         Session session = ctx.session;
         connections.remove(session);
+        watchers.values().forEach(set -> set.remove(session));
     }
 
     private void removeWatcher(int gameID, Session s) {
@@ -204,6 +372,39 @@ public class WebSocketHandler implements WsConnectHandler, WsMessageHandler, WsC
             }
         }
     }
+
+
+
+    private void sendServerMessage(Session s, ServerMessage m) {
+        if (s == null || !s.isOpen()) return;
+        try {
+            String json = gson.toJson(m);
+            System.out.println("[WS SERVER] sendTo(ServerMessage) -> " + json);
+            s.getRemote().sendString(json);
+        } catch (Exception ex) {
+            System.out.println("[WS SERVER] sendTo ERROR: " + ex.getMessage());
+        }
+    }
+
+    private void broadcastToGame(int gameID, Session exclude, ServerMessage m) {
+        var set = watchers.get(gameID);
+        if (set == null || set.isEmpty()) return;
+        String json = gson.toJson(m);
+        for (Session s : set) {
+            if (s.isOpen() && s != exclude) {
+                try {
+                    s.getRemote().sendString(json);
+                } catch (Exception ignored) {}
+            }
+        }
+    }
+
+    private void sendErrorServerMessage(Session session, String message) {
+        ServerMessage error = new ServerMessage(ERROR);
+        error.setErrorMessage(message);  // make sure your ServerMessage has a setter or a constructor for this
+        sendServerMessage(session, error);
+    }
+
     private ChessPosition parseSquare(String sq) {
         if (sq == null || sq.length() != 2) {
             throw new IllegalArgumentException("invalid square: " + sq);

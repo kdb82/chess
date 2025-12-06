@@ -22,11 +22,14 @@ import serialization.GameStateMapper;
 
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class GameService {
     private final GameDao gameDao;
     private final AuthDao authDao;
+    private final Set<Integer> finishedGames = new HashSet<>();
 
     public GameService(GameDao gameDao, AuthDao authDao) {
         this.gameDao = gameDao;
@@ -146,6 +149,10 @@ public class GameService {
             throw new BadRequestException("Error: Game not found");
         }
 
+        if (finishedGames.contains(gameId)) {
+            throw new BadRequestException("Error: game already finished");
+        }
+
         ChessGame game = gameData.game();
         if (game == null) {
             game = gameDao.loadGameState(gameId);
@@ -220,6 +227,10 @@ public class GameService {
             throw new BadRequestException("Error: username required");
         }
 
+        if (finishedGames.contains(gameId)) {
+            throw new BadRequestException("Error: game already finished");
+        }
+
         GameData game = gameDao.getGame(gameId);
         if (game == null) {
             throw new BadRequestException("Error: Game not found");
@@ -238,6 +249,7 @@ public class GameService {
         }
 
         gameDao.updateGameStatus(gameId, "FINISHED", result);
+        finishedGames.add(gameId);
     }
 
 
@@ -265,5 +277,39 @@ public class GameService {
         }
     }
 
+
+    public GameStateDTO loadGameState(String authToken, int gameId)
+            throws DataAccessException, UnauthorizedException, BadRequestException {
+
+        AuthData auth = authDao.getAuth(authToken);
+        if (auth == null) {
+            throw new UnauthorizedException("Error: Unauthorized");
+        }
+
+        GameData gameData = gameDao.getGame(gameId);
+        if (gameData == null) {
+            throw new BadRequestException("Error: Game not found");
+        }
+
+        ChessGame game = gameData.game();
+        if (game == null) {
+            game = gameDao.loadGameState(gameId);
+        }
+        if (game == null) {
+            game = new ChessGame();
+        }
+
+        return GameStateMapper.gameToDTO(game);
+    }
+
+    public String getUsernameForAuth(String authToken)
+            throws DataAccessException, UnauthorizedException {
+
+        AuthData auth = authDao.getAuth(authToken);
+        if (auth == null) {
+            throw new UnauthorizedException("Error: Unauthorized");
+        }
+        return auth.username();
+    }
 
 }
